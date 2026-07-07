@@ -21,7 +21,7 @@ import StageNode from '@/components/StageNode';
 import SketchNode from '@/components/SketchNode';
 import SketchPad from '@/components/SketchPad';
 import { StudioContext } from '@/lib/studio-context';
-import { STAGES, type StageKey } from '@/lib/nodeTypes';
+import { STAGES, NEXT, type StageKey } from '@/lib/nodeTypes';
 import { getProject, saveProject } from '@/lib/client-store';
 import type { Project } from '@/lib/types';
 
@@ -47,6 +47,19 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       loaded.current = true;
     });
   }, [projectId, setNodes, setEdges]);
+
+  // keep a live ref of nodes for connection validation (avoids stale closures)
+  const nodesRef = useRef<Node[]>([]);
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  const typeOf = (id?: string | null) =>
+    (nodesRef.current.find((n) => n.id === id)?.data as { type?: StageKey } | undefined)?.type;
+
+  // enforce the strict pipeline order: only <stage> → NEXT[stage] is allowed
+  const isValidConnection = useCallback((c: Connection | Edge) => {
+    const s = typeOf(c.source);
+    const t = typeOf(c.target);
+    return !!s && !!t && NEXT[s] === t;
+  }, []);
 
   const onConnect = useCallback(
     (c: Connection) => setEdges((es) => addEdge({ ...c, animated: true }, es)),
@@ -124,6 +137,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          isValidConnection={isValidConnection}
           onNodeDoubleClick={(_e, node) => { if (node.type === 'sketch') openSketch(node.id); }}
           nodeTypes={nodeTypes}
           colorMode="dark"

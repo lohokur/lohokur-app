@@ -23,3 +23,13 @@ export const STAGES: Stage[] = [
 export const STAGE_MAP: Record<string, Stage> = Object.fromEntries(
   STAGES.map((s) => [s.key, s])
 );
+
+// Strict pipeline order: a node type may only connect INTO its single successor.
+export const NEXT: Partial<Record<StageKey, StageKey>> = {
+  sketch: 'visualise',
+  visualise: 'extract',
+  extract: 'pattern',
+  pattern: 'techpack',
+  techpack: 'manufacture',
+  manufacture: 'ship',
+};
