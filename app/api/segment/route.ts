@@ -10,9 +10,10 @@ function toPart(dataUrl: string) {
 }
 
 const PROMPT = [
-  'Give the segmentation masks for each distinct GARMENT, clothing or accessory piece worn by the figure in this photo',
-  '(for example: jacket, top, trousers or leggings, boots, cap/hat, gloves, bag, belt).',
-  'Do NOT include the body, skin, the plain black bodysuit base, or the background — only the distinct designed pieces.',
+  'Give the segmentation masks for the MAIN garment / clothing / accessory pieces worn by the figure in this photo',
+  '(for example: jacket or top, trousers or leggings, boots, cap/hat, gloves, bag).',
+  'Return AT MOST 5 pieces. Treat a matching pair as ONE piece: both boots = a single "boots" entry (mask covers both),',
+  'both gloves = one "gloves" entry. Do NOT include the body, skin, the plain black bodysuit base, or the background.',
   'Output ONLY a JSON array. Each element must have exactly:',
   '"label" (short name of the piece), "box_2d" ([y0, x0, y1, x1] as integers normalized to 0-1000), and',
   '"mask" (a base64 PNG data URL — a grayscale mask that fills the bounding box, white = the piece).',
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
     const res = await ai.models.generateContent({
       model,
       contents: [{ text: PROMPT }, toPart(image)],
+      config: { thinkingConfig: { thinkingBudget: 0 } }, // no thinking → much faster
     });
     const text = (res?.candidates?.[0]?.content?.parts || []).map((p) => p.text).filter(Boolean).join('');
     // strip code fences / leading prose, grab the JSON array
