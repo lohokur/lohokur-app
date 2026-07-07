@@ -104,3 +104,55 @@ body {
 .sn-handle { width: 9px; height: 9px; background: var(--ink); border: 1px solid rgba(233,240,236,.5); }
 .react-flow__handle.sn-handle { border-radius: 50%; }
 .react-flow__edge-path { stroke: var(--mint); stroke-width: 1.6; }
+
+/* ---------- sketch node ---------- */
+.sketch-node .sn-edit {
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--mint); background: rgba(169,240,208,.12); border: 1px solid var(--glass-line);
+  border-radius: 6px; padding: 3px 8px; cursor: pointer;
+}
+.sketch-node .sn-edit:hover { background: rgba(169,240,208,.22); }
+.sketch-node .sn-draw {
+  height: 128px; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; background: rgba(0,0,0,.22);
+}
+.sketch-node .sn-draw img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sketch-node .sn-empty { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; color: var(--muted); }
+
+/* ---------- sketch pad (side panel) ---------- */
+.sketchpad {
+  position: fixed; top: 0; right: 0; height: 100dvh; width: min(94vw, 452px); z-index: 50;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(20,22,26,.9), rgba(11,12,14,.93));
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-left: 1px solid var(--glass-line); box-shadow: -30px 0 80px -30px rgba(0,0,0,.85);
+  transform: translateX(105%); transition: transform .5s cubic-bezier(.22,1,.3,1);
+}
+.sketchpad.open { transform: none; }
+.sp-head {
+  display: flex; align-items: center; justify-content: space-between; padding: 16px 18px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--fg); border-bottom: 1px solid var(--glass-line);
+}
+.sp-x { background: none; border: none; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
+.sp-x:hover { color: var(--fg); }
+.sp-canvas {
+  width: calc(100% - 32px); margin: 16px 16px 0; aspect-ratio: 900 / 680; background: #f6f3ec;
+  border-radius: 10px; touch-action: none; cursor: crosshair; box-shadow: 0 20px 50px -20px rgba(0,0,0,.8);
+}
+.sp-tools { margin-top: auto; padding: 14px 16px 20px; display: flex; flex-direction: column; gap: 11px; border-top: 1px solid var(--glass-line); }
+.sp-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sp-tools button {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); background: rgba(255,255,255,.04); border: 1px solid transparent;
+  border-radius: 8px; padding: 7px 11px; cursor: pointer; transition: background .2s, color .2s, border-color .2s;
+}
+.sp-tools button:hover { background: rgba(255,255,255,.09); }
+.sp-tools button.on { color: var(--mint); background: rgba(169,240,208,.14); border-color: var(--glass-line); }
+.sp-group.swatches .sw { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); }
+.sp-group.swatches .sw.on { border-color: var(--mint); }
+.sz { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; color: var(--muted); }
+.sz span { background: currentColor; border-radius: 50%; display: block; }
+.sz.on { color: var(--mint); }
+.sp-done { margin-top: 4px; background: var(--mint) !important; color: var(--ink) !important; font-weight: 600 !important; border: none !important; padding: 12px !important; border-radius: 9px !important; }
+.sp-done:hover { background: #c4f5da !important; }
