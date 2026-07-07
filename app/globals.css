@@ -129,6 +129,11 @@ body {
 }
 .sketch-node .sn-draw img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sketch-node .sn-empty { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; color: var(--muted); }
+.visualise-node .sn-draw { height: 128px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,.22); }
+.visualise-node .sn-draw img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.visualise-node .sn-empty { font-family: var(--mono); font-size: 10px; letter-spacing: .05em; color: var(--muted); text-align: center; padding: 0 10px; }
+.sn-empty.pulse { animation: sn-pulse 1.2s ease-in-out infinite; color: var(--mint); }
+@keyframes sn-pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
 
 /* ---------- sketch pad (side panel) ---------- */
 .sketchpad {

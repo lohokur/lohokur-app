@@ -19,14 +19,26 @@ import '@xyflow/react/dist/style.css';
 import Link from 'next/link';
 import StageNode from '@/components/StageNode';
 import SketchNode from '@/components/SketchNode';
+import VisualiseNode from '@/components/VisualiseNode';
 import SketchPad from '@/components/SketchPad';
 import { StudioContext } from '@/lib/studio-context';
 import { STAGES, NEXT, type StageKey } from '@/lib/nodeTypes';
 import { getProject, saveProject } from '@/lib/client-store';
 import type { Project } from '@/lib/types';
 
-const nodeTypes = { stage: StageNode, sketch: SketchNode };
+const nodeTypes = { stage: StageNode, sketch: SketchNode, visualise: VisualiseNode };
 let counter = 1;
+
+async function urlToDataUrl(url: string): Promise<string> {
+  const r = await fetch(url);
+  const b = await r.blob();
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result as string);
+    fr.onerror = rej;
+    fr.readAsDataURL(b);
+  });
+}
 
 export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<Project | null | undefined>(undefined);
@@ -48,11 +60,48 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     });
   }, [projectId, setNodes, setEdges]);
 
-  // keep a live ref of nodes for connection validation (avoids stale closures)
+  // live refs for validation / lookups (avoids stale closures)
   const nodesRef = useRef<Node[]>([]);
+  const edgesRef = useRef<Edge[]>([]);
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { edgesRef.current = edges; }, [edges]);
   const typeOf = (id?: string | null) =>
     (nodesRef.current.find((n) => n.id === id)?.data as { type?: StageKey } | undefined)?.type;
+
+  const setNodeData = useCallback(
+    (id: string, patch: Record<string, unknown>) =>
+      setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...patch } } : n))),
+    [setNodes]
+  );
+
+  // Visualise: take the connected sketch, render it worn by the base model via Gemini
+  const visualise = useCallback(
+    async (id: string) => {
+      const edge = edgesRef.current.find((e) => e.target === id);
+      const src = edge ? nodesRef.current.find((n) => n.id === edge.source) : undefined;
+      const sketch = (src?.data as { image?: string } | undefined)?.image;
+      if (!sketch) {
+        setNodeData(id, { note: 'connect a sketch first' });
+        setTimeout(() => setNodeData(id, { note: undefined }), 2600);
+        return;
+      }
+      setNodeData(id, { loading: true, note: undefined });
+      try {
+        const base = await urlToDataUrl('/base.jpg');
+        const r = await fetch('/api/visualise', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ sketch, base }),
+        });
+        const j = await r.json();
+        if (j.image) setNodeData(id, { image: j.image, loading: false });
+        else setNodeData(id, { loading: false, note: (j.error || 'render failed').slice(0, 44) });
+      } catch {
+        setNodeData(id, { loading: false, note: 'render failed' });
+      }
+    },
+    [setNodeData]
+  );
 
   // enforce the strict pipeline order: only <stage> → NEXT[stage] is allowed
   const isValidConnection = useCallback((c: Connection | Edge) => {
@@ -76,17 +125,17 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const addNode = useCallback(
     (type: StageKey) => {
       const id = `${type}-${Date.now().toString(36)}-${counter++}`;
-      const isSketch = type === 'sketch';
+      const nt = type === 'sketch' ? 'sketch' : type === 'visualise' ? 'visualise' : 'stage';
       setNodes((ns) => [
         ...ns,
         {
           id,
-          type: isSketch ? 'sketch' : 'stage',
+          type: nt,
           position: { x: 160 + (ns.length % 5) * 60, y: 120 + ns.length * 26 },
           data: { type },
         },
       ]);
-      if (isSketch) setEditing(id); // drop it on the canvas AND open the pad
+      if (type === 'sketch') setEditing(id); // drop it on the canvas AND open the pad
     },
     [setNodes]
   );
@@ -129,7 +178,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   }
 
   return (
-    <StudioContext.Provider value={{ openSketch }}>
+    <StudioContext.Provider value={{ openSketch, visualise }}>
       <div className="studio">
         <ReactFlow
           nodes={nodes}
