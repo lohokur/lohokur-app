@@ -20,13 +20,23 @@ import Link from 'next/link';
 import StageNode from '@/components/StageNode';
 import SketchNode from '@/components/SketchNode';
 import VisualiseNode from '@/components/VisualiseNode';
+import PatternNode from '@/components/PatternNode';
+import TechpackNode from '@/components/TechpackNode';
 import SketchPad from '@/components/SketchPad';
+import TechpackPanel from '@/components/TechpackPanel';
 import { StudioContext } from '@/lib/studio-context';
 import { STAGES, NEXT, type StageKey } from '@/lib/nodeTypes';
 import { getProject, saveProject } from '@/lib/client-store';
 import type { Project } from '@/lib/types';
 
-const nodeTypes = { stage: StageNode, sketch: SketchNode, visualise: VisualiseNode };
+const nodeTypes = {
+  stage: StageNode,
+  sketch: SketchNode,
+  visualise: VisualiseNode,
+  pattern: PatternNode,
+  techpack: TechpackNode,
+};
+const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', pattern: 'pattern', techpack: 'techpack' };
 let counter = 1;
 
 async function urlToDataUrl(url: string): Promise<string> {
@@ -46,6 +56,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [editing, setEditing] = useState<string | null>(null);
+  const [editingTechpack, setEditingTechpack] = useState<string | null>(null);
   const dirty = useRef(false);
   const loaded = useRef(false);
 
@@ -116,6 +127,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   );
 
   const openSketch = useCallback((id: string) => setEditing(id), []);
+  const openTechpack = useCallback((id: string) => setEditingTechpack(id), []);
   const setNodeImage = useCallback(
     (id: string, image: string) =>
       setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, image } } : n))),
@@ -125,7 +137,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const addNode = useCallback(
     (type: StageKey) => {
       const id = `${type}-${Date.now().toString(36)}-${counter++}`;
-      const nt = type === 'sketch' ? 'sketch' : type === 'visualise' ? 'visualise' : 'stage';
+      const nt = CUSTOM[type] ?? 'stage';
       setNodes((ns) => [
         ...ns,
         {
@@ -178,7 +190,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   }
 
   return (
-    <StudioContext.Provider value={{ openSketch, visualise }}>
+    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, setNodeImage }}>
       <div className="studio">
         <ReactFlow
           nodes={nodes}
@@ -188,7 +200,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onConnect={onConnect}
           isValidConnection={isValidConnection}
           connectionRadius={44}
-          onNodeDoubleClick={(_e, node) => { if (node.type === 'sketch') openSketch(node.id); }}
+          onNodeDoubleClick={(_e, node) => {
+            if (node.type === 'sketch') openSketch(node.id);
+            else if (node.type === 'techpack') openTechpack(node.id);
+          }}
           nodeTypes={nodeTypes}
           colorMode="dark"
           fitView
@@ -227,6 +242,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onChange={(d) => { if (editing) setNodeImage(editing, d); }}
           onClose={() => setEditing(null)}
         />
+
+        <TechpackPanel open={!!editingTechpack} onClose={() => setEditingTechpack(null)} />
       </div>
     </StudioContext.Provider>
   );
