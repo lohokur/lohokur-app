@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent as RDragEvent, type PointerEvent as RPointerEvent } from 'react';
 
 const COLORS = ['#141414', '#e5484d', '#3b82f6', '#22c55e', '#eab308', '#ffffff'];
 const SIZES = [2, 5, 12];
@@ -22,6 +22,7 @@ export default function SketchPad({
   onClose: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
   const history = useRef<string[]>([]);
@@ -106,12 +107,49 @@ export default function SketchPad({
     snapshot();
     emit();
   };
+  // option 2: load an image from disk (or dropped) — fit it onto the paper
+  const loadFile = (f?: File | null) => {
+    if (!f || !/^image\//.test(f.type)) return;
+    const img = new Image();
+    img.onload = () => {
+      fillPaper();
+      const s = Math.min(W / img.width, H / img.height);
+      const w = img.width * s;
+      const h = img.height * s;
+      ctx().drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+      snapshot();
+      emit();
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(f);
+  };
+  const onDrop = (e: RDragEvent) => {
+    e.preventDefault();
+    loadFile(e.dataTransfer?.files?.[0]);
+  };
 
   return (
-    <aside className={`sketchpad${open ? ' open' : ''}`} aria-hidden={!open}>
+    <aside
+      className={`sketchpad${open ? ' open' : ''}`}
+      aria-hidden={!open}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+    >
       <div className="sp-head">
         <span>Sketch pad</span>
         <button className="sp-x" onClick={onClose} aria-label="Close">×</button>
+      </div>
+
+      <div className="sp-source">
+        <button onClick={() => fileRef.current?.click()}>↑ Upload image</button>
+        <button className="soon" disabled title="Coming soon">▢ Scan with phone <em>soon</em></button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => { loadFile(e.target.files?.[0]); e.target.value = ''; }}
+        />
       </div>
 
       <canvas
