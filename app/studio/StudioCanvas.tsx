@@ -18,6 +18,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import Link from 'next/link';
 import StageNode from '@/components/StageNode';
+import Backdrop from '@/components/Backdrop';
 import { STAGES, type StageKey } from '@/lib/nodeTypes';
 import { getProject, saveProject } from '@/lib/client-store';
 import type { Project } from '@/lib/types';
@@ -101,6 +102,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   return (
     <div className="studio">
+      <Backdrop />
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -115,7 +117,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         defaultEdgeOptions={{ animated: true }}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={26} size={1} color="#242a27" />
+        <Background variant={BackgroundVariant.Dots} gap={30} size={1.4} color="rgba(255,255,255,0.09)" />
         <MiniMap pannable zoomable nodeColor="#3a4640" maskColor="rgba(6,7,9,.7)" />
         <Controls />
 
