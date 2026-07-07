@@ -46,17 +46,18 @@ body {
 .proj-name { font-size: 16px; }
 .proj-meta { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--muted); text-transform: uppercase; }
 
-/* ---------- studio / canvas ---------- */
-.studio { position: relative; width: 100vw; height: 100dvh; background: var(--ink); }
-
-/* ambient backdrop (fog + vignette) ported from the landing canvas */
-.bd-fog { position: fixed; inset: 0; z-index: 0; display: block; width: 100%; height: 100%; }
+/* ambient backdrop (fog + vignette) — behind the whole app */
+.bd-fog { position: fixed; inset: 0; z-index: -1; display: block; width: 100%; height: 100%; }
 .bd-vignette {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background: radial-gradient(120% 90% at 50% 42%, transparent 38%, rgba(4,5,6,.55) 78%, rgba(3,4,5,.92) 100%);
 }
 
-.studio .react-flow { position: relative; z-index: 1; background: transparent; }
+/* ---------- studio / canvas ---------- */
+.studio { position: relative; width: 100vw; height: 100dvh; background: transparent; }
+
+/* let the fog show through React Flow (it defaults to an opaque dark bg) */
+.react-flow { background: transparent !important; --xy-background-color-default: transparent; }
 .react-flow__attribution { display: none; }
 
 .topbar { display: flex; align-items: center; gap: 14px; }
