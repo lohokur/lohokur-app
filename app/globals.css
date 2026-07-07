@@ -135,6 +135,14 @@ body {
 .sn-empty.pulse { animation: sn-pulse 1.2s ease-in-out infinite; color: var(--mint); }
 @keyframes sn-pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
 
+/* image nodes: show the FULL image (never crop) — node grows to the image aspect */
+.sketch-node .sn-draw,
+.visualise-node .sn-draw,
+.pattern-node .sn-draw { height: auto; min-height: 96px; }
+.sketch-node .sn-draw img,
+.visualise-node .sn-draw img,
+.pattern-node .sn-draw img { height: auto; object-fit: contain; }
+
 /* ---------- sketch pad (side panel) ---------- */
 .sketchpad {
   position: fixed; top: 0; right: 0; height: 100dvh; width: min(94vw, 452px); z-index: 50;
