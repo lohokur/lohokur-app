@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
-// Gemini image generation can take a while (~60–90s).
+// Gemini image generation can take a while (~30–90s).
 export const maxDuration = 300;
 
 function toPart(dataUrl: string) {
@@ -10,30 +10,43 @@ function toPart(dataUrl: string) {
   return { inlineData: { mimeType: m[1], data: m[2] } };
 }
 
-const PROMPT = [
-  'The FIRST image is the base model: a real photo of a faceless figure in a plain black bodysuit,',
-  'standing in a bare concrete room with a wiring panel on the wall.',
-  'The SECOND image is a rough hand-drawn sketch of a garment / outfit design.',
-  '',
-  'Dress the base figure in the garment(s) from the sketch. Faithfully translate the sketched design —',
-  'silhouette, proportions, layers, key details — into real, well-made clothing worn by the figure.',
-  '',
-  'CRITICAL — FRAMING MUST MATCH THE FIRST PHOTO EXACTLY: reproduce the identical camera framing, crop, zoom,',
-  'distance and ASPECT RATIO of the base photo. It is a FULL-LENGTH PORTRAIT — the ENTIRE figure must be',
-  'visible from the top of the head down to the FEET on the floor, standing in the full room, with the same',
-  'headroom and floor space. Do NOT zoom in, do NOT crop to the upper body, do NOT switch to a landscape or',
-  'close-up composition. Keep the same tall vertical (portrait) proportions as the base.',
-  '',
-  'KEEP EVERYTHING ELSE IDENTICAL to the first photo: the same faceless figure, same body, same pose and',
-  'stance, the exact same room, wall, floor, wiring panel and lighting. Only add the sketched clothing onto',
-  'the body; anything the new clothing does not cover stays as the black bodysuit.',
-  '',
-  'Output a single photorealistic, full-length image, sharp and high detail — the original photo with the',
-  'designed outfit now worn by the figure, head to feet.',
-].join(' ');
+const FRAMING =
+  'Reproduce the identical camera framing, crop, zoom, distance and ASPECT RATIO of the base photo: a FULL-LENGTH PORTRAIT with the ENTIRE figure visible from the top of the head down to the FEET on the floor, standing in the full room, same tall vertical proportions. Do NOT zoom in, crop to the upper body, or switch to a landscape/close-up composition.';
+
+const BASE = 'The FIRST image is the base model: a real photo of a faceless figure in a plain black bodysuit, standing front-facing in a bare concrete room with a wiring panel on the wall.';
+
+function promptFor(view: string) {
+  if (view === 'back') {
+    return [
+      BASE,
+      'The SECOND image is a sketch of the BACK of a garment / outfit design.',
+      'Turn the figure AROUND so we see it from BEHIND — its back to the camera — in the exact same room, lighting and standing pose (mirrored). Dress it in the garment, faithfully showing the BACK design from the sketch.',
+      FRAMING,
+      'Only add the sketched clothing; anything it does not cover stays the black bodysuit. Photorealistic, sharp, full-length head to feet.',
+    ].join(' ');
+  }
+  if (view === 'side') {
+    return [
+      BASE,
+      'The SECOND image is a sketch of the SIDE of a garment / outfit design.',
+      'Turn the figure to a SIDE PROFILE (facing to one side) in the exact same room, lighting and stance. Dress it in the garment, faithfully showing the SIDE design from the sketch.',
+      FRAMING,
+      'Only add the sketched clothing; anything it does not cover stays the black bodysuit. Photorealistic, sharp, full-length head to feet.',
+    ].join(' ');
+  }
+  // front (default)
+  return [
+    BASE,
+    'The SECOND image is a rough hand-drawn sketch of a garment / outfit design (front view).',
+    'Dress the base figure in the garment(s) from the sketch, faithfully translating the sketched design — silhouette, proportions, layers, key details — into real, well-made clothing worn by the figure.',
+    FRAMING,
+    'KEEP EVERYTHING ELSE IDENTICAL to the base photo: same faceless figure, body, pose, room, wall, floor, wiring panel and lighting. Only add the sketched clothing; uncovered areas stay black bodysuit.',
+    'Output a single photorealistic, full-length image — the base photo with the designed outfit now worn, head to feet.',
+  ].join(' ');
+}
 
 export async function POST(req: Request) {
-  const { sketch, base } = await req.json().catch(() => ({}));
+  const { sketch, base, view } = await req.json().catch(() => ({}));
   if (!sketch || !base) {
     return NextResponse.json({ error: 'missing sketch or base image' }, { status: 400 });
   }
@@ -44,7 +57,7 @@ export async function POST(req: Request) {
   try {
     const ai = new GoogleGenAI({ apiKey });
     const model = process.env.GEMINI_MODEL || 'gemini-3-pro-image';
-    const contents = [{ text: PROMPT }, toPart(base), toPart(sketch)];
+    const contents = [{ text: promptFor(view || 'front') }, toPart(base), toPart(sketch)];
     const res = await ai.models.generateContent({ model, contents });
     const parts = res?.candidates?.[0]?.content?.parts || [];
     for (const p of parts) {

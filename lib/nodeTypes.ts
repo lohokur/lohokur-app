@@ -24,6 +24,10 @@ export const STAGE_MAP: Record<string, Stage> = Object.fromEntries(
   STAGES.map((s) => [s.key, s])
 );
 
+// Garment views a sketch can hold; visualise renders each connected view.
+export const VIEWS = ['front', 'side', 'back'] as const;
+export type View = (typeof VIEWS)[number];
+
 // Strict pipeline order: a node type may only connect INTO its single successor.
 export const NEXT: Partial<Record<StageKey, StageKey>> = {
   sketch: 'visualise',

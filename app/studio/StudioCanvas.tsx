@@ -25,7 +25,7 @@ import TechpackNode from '@/components/TechpackNode';
 import SketchPad from '@/components/SketchPad';
 import TechpackPanel from '@/components/TechpackPanel';
 import { StudioContext } from '@/lib/studio-context';
-import { STAGES, NEXT, type StageKey } from '@/lib/nodeTypes';
+import { STAGES, NEXT, VIEWS, type StageKey, type View } from '@/lib/nodeTypes';
 import { getProject, saveProject } from '@/lib/client-store';
 import type { Project } from '@/lib/types';
 
@@ -85,31 +85,47 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     [setNodes]
   );
 
-  // Visualise: take the connected sketch, render it worn by the base model via Gemini
+  // Visualise: BATCH — render each connected sketch view (front, then side, then back) on the base
   const visualise = useCallback(
     async (id: string) => {
       const edge = edgesRef.current.find((e) => e.target === id);
       const src = edge ? nodesRef.current.find((n) => n.id === edge.source) : undefined;
-      const sketch = (src?.data as { image?: string } | undefined)?.image;
-      if (!sketch) {
+      const sd = src?.data as { image?: string; views?: Partial<Record<View, string>> } | undefined;
+      const sviews: Partial<Record<View, string>> = sd?.views ?? (sd?.image ? { front: sd.image } : {});
+      const present = VIEWS.filter((v) => sviews[v]);
+      if (!present.length) {
         setNodeData(id, { note: 'connect a sketch first' });
         setTimeout(() => setNodeData(id, { note: undefined }), 2600);
         return;
       }
-      setNodeData(id, { loading: true, note: undefined });
-      try {
-        const base = await urlToDataUrl('/base.jpg');
-        const r = await fetch('/api/visualise', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ sketch, base }),
-        });
-        const j = await r.json();
-        if (j.image) setNodeData(id, { image: j.image, loading: false });
-        else setNodeData(id, { loading: false, note: (j.error || 'render failed').slice(0, 44) });
-      } catch {
-        setNodeData(id, { loading: false, note: 'render failed' });
+      const base = await urlToDataUrl('/base.jpg');
+      const out: Partial<Record<View, string>> = {};
+      setNodeData(id, { loading: true, note: undefined, views: {}, image: undefined });
+      for (let i = 0; i < present.length; i++) {
+        const view = present[i];
+        setNodeData(id, { loading: true, note: `rendering ${view}… (${i + 1}/${present.length})` });
+        try {
+          const r = await fetch('/api/visualise', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sketch: sviews[view], base, view }),
+          });
+          const j = await r.json();
+          if (j.image) {
+            out[view] = j.image;
+            setNodeData(id, { views: { ...out }, image: out.front ?? out[view], loading: true });
+          }
+        } catch {
+          /* keep going with the other views */
+        }
       }
+      const any = Object.keys(out).length > 0;
+      setNodeData(id, {
+        views: out,
+        image: out.front ?? Object.values(out)[0],
+        loading: false,
+        note: any ? undefined : 'render failed',
+      });
     },
     [setNodeData]
   );
@@ -131,6 +147,19 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const setNodeImage = useCallback(
     (id: string, image: string) =>
       setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, image } } : n))),
+    [setNodes]
+  );
+
+  // store a sketch per view (front/side/back); front also mirrors to `image` for the card
+  const setNodeView = useCallback(
+    (id: string, view: View, url: string) =>
+      setNodes((ns) =>
+        ns.map((n) => {
+          if (n.id !== id) return n;
+          const views = { ...(n.data as { views?: Record<string, string> }).views, [view]: url };
+          return { ...n, data: { ...n.data, views, ...(view === 'front' ? { image: url } : {}) } };
+        })
+      ),
     [setNodes]
   );
 
@@ -175,10 +204,11 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     [status]
   );
 
-  const editingImage = useMemo(
-    () => (editing ? (nodes.find((n) => n.id === editing)?.data as { image?: string })?.image : undefined),
-    [editing, nodes]
-  );
+  const editingViews = useMemo<Partial<Record<View, string>>>(() => {
+    if (!editing) return {};
+    const d = nodes.find((n) => n.id === editing)?.data as { image?: string; views?: Partial<Record<View, string>> } | undefined;
+    return d?.views ?? (d?.image ? { front: d.image } : {});
+  }, [editing, nodes]);
 
   if (project === null) {
     return (
@@ -238,8 +268,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         <SketchPad
           open={!!editing}
           nodeId={editing}
-          image={editingImage}
-          onChange={(d) => { if (editing) setNodeImage(editing, d); }}
+          views={editingViews}
+          onView={(view, d) => { if (editing) setNodeView(editing, view, d); }}
           onClose={() => setEditing(null)}
         />
 

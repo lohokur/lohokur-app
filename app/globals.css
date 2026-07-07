@@ -129,6 +129,17 @@ body {
 }
 .sketch-node .sn-draw img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sketch-node .sn-empty { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; color: var(--muted); }
+.sn-views { display: flex; gap: 5px; padding: 6px 10px 9px; }
+.sn-views span {
+  width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 9px; border-radius: 5px; color: var(--muted);
+  border: 1px solid var(--glass-line); background: rgba(255,255,255,.02);
+}
+.sn-views span.on { color: var(--ink); background: var(--mint); border-color: var(--mint); }
+.sn-thumbs { display: flex; gap: 6px; padding: 8px 10px 10px; }
+.sn-thumbs figure { margin: 0; flex: 1; }
+.sn-thumbs img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--glass-line); }
+.sn-thumbs figcaption { font-family: var(--mono); font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; margin-top: 3px; }
 .visualise-node .sn-draw { height: 128px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,.22); }
 .visualise-node .sn-draw img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .visualise-node .sn-empty { font-family: var(--mono); font-size: 10px; letter-spacing: .05em; color: var(--muted); text-align: center; padding: 0 10px; }
@@ -160,6 +171,14 @@ body {
 }
 .sp-x { background: none; border: none; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
 .sp-x:hover { color: var(--fg); }
+.sp-views { display: flex; gap: 6px; padding: 12px 16px 0; }
+.sp-views button {
+  flex: 1; text-transform: capitalize; font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+  color: var(--muted); background: rgba(255,255,255,.04); border: 1px solid var(--glass-line); border-radius: 8px;
+  padding: 8px; cursor: pointer; transition: background .2s, color .2s, border-color .2s;
+}
+.sp-views button.has { color: var(--fg); }
+.sp-views button.on { color: var(--ink); background: var(--mint); border-color: var(--mint); font-weight: 600; }
 .sp-source { display: flex; gap: 8px; padding: 12px 16px 0; }
 .sp-source button {
   flex: 1; font-family: var(--mono); font-size: 10px; letter-spacing: .04em; text-transform: uppercase;
