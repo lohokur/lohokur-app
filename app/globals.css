@@ -101,8 +101,19 @@ body {
 }
 .sn-tag { color: var(--muted); font-size: 8.5px; }
 .sn-body { padding: 16px 12px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
-.sn-handle { width: 9px; height: 9px; background: var(--ink); border: 1px solid rgba(233,240,236,.5); }
-.react-flow__handle.sn-handle { border-radius: 50%; }
+/* connection ports — big, obvious, easy to grab */
+.react-flow__handle {
+  width: 13px; height: 13px; background: var(--ink); border: 2px solid var(--mint); border-radius: 50%;
+  transition: transform .15s ease, box-shadow .15s ease; z-index: 3;
+}
+/* invisible enlarged hit area so you don't have to aim precisely */
+.react-flow__handle::after { content: ''; position: absolute; inset: -10px; border-radius: 50%; }
+.react-flow__handle:hover,
+.react-flow__handle.connectionindicator:hover { transform: scale(1.45); box-shadow: 0 0 0 5px rgba(169,240,208,.18); }
+.react-flow__handle-right { right: -7px; }
+.react-flow__handle-left { left: -7px; }
+.stage-node:hover .react-flow__handle,
+.sketch-node:hover .react-flow__handle { box-shadow: 0 0 0 4px rgba(169,240,208,.14); }
 .react-flow__edge-path { stroke: var(--mint); stroke-width: 1.6; }
 
 /* ---------- sketch node ---------- */

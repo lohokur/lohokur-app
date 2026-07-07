@@ -138,6 +138,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           isValidConnection={isValidConnection}
+          connectionRadius={44}
           onNodeDoubleClick={(_e, node) => { if (node.type === 'sketch') openSketch(node.id); }}
           nodeTypes={nodeTypes}
           colorMode="dark"
