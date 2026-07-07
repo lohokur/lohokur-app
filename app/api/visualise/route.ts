@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
-// Gemini image generation can take a while.
-export const maxDuration = 60;
+// Gemini image generation can take a while (~60–90s).
+export const maxDuration = 300;
 
 function toPart(dataUrl: string) {
   const m = /^data:(.+?);base64,([\s\S]*)$/.exec(dataUrl);
