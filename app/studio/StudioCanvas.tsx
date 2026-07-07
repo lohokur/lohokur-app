@@ -22,8 +22,10 @@ import SketchNode from '@/components/SketchNode';
 import VisualiseNode from '@/components/VisualiseNode';
 import PatternNode from '@/components/PatternNode';
 import TechpackNode from '@/components/TechpackNode';
+import ExtractNode from '@/components/ExtractNode';
 import SketchPad from '@/components/SketchPad';
 import TechpackPanel from '@/components/TechpackPanel';
+import ExtractPanel from '@/components/ExtractPanel';
 import { StudioContext } from '@/lib/studio-context';
 import { STAGES, NEXT, VIEWS, type StageKey, type View } from '@/lib/nodeTypes';
 import { getProject, saveProject } from '@/lib/client-store';
@@ -33,10 +35,11 @@ const nodeTypes = {
   stage: StageNode,
   sketch: SketchNode,
   visualise: VisualiseNode,
+  extract: ExtractNode,
   pattern: PatternNode,
   techpack: TechpackNode,
 };
-const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', pattern: 'pattern', techpack: 'techpack' };
+const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', extract: 'extract', pattern: 'pattern', techpack: 'techpack' };
 let counter = 1;
 
 async function urlToDataUrl(url: string): Promise<string> {
@@ -57,6 +60,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [editing, setEditing] = useState<string | null>(null);
   const [editingTechpack, setEditingTechpack] = useState<string | null>(null);
+  const [editingExtract, setEditingExtract] = useState<string | null>(null);
   const dirty = useRef(false);
   const loaded = useRef(false);
 
@@ -144,6 +148,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   const openSketch = useCallback((id: string) => setEditing(id), []);
   const openTechpack = useCallback((id: string) => setEditingTechpack(id), []);
+  const openExtract = useCallback((id: string) => setEditingExtract(id), []);
   const setNodeImage = useCallback(
     (id: string, image: string) =>
       setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, image } } : n))),
@@ -210,6 +215,15 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     return d?.views ?? (d?.image ? { front: d.image } : {});
   }, [editing, nodes]);
 
+  // the visualised look feeding the Extract node being edited
+  const editingExtractImage = useMemo<string | undefined>(() => {
+    if (!editingExtract) return undefined;
+    const edge = edges.find((e) => e.target === editingExtract);
+    const src = edge ? nodes.find((n) => n.id === edge.source) : undefined;
+    const d = src?.data as { image?: string; views?: Partial<Record<View, string>> } | undefined;
+    return d?.views?.front ?? d?.image;
+  }, [editingExtract, nodes, edges]);
+
   if (project === null) {
     return (
       <main className="home">
@@ -220,7 +234,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   }
 
   return (
-    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, setNodeImage }}>
+    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, openExtract, setNodeImage }}>
       <div className="studio">
         <ReactFlow
           nodes={nodes}
@@ -233,6 +247,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onNodeDoubleClick={(_e, node) => {
             if (node.type === 'sketch') openSketch(node.id);
             else if (node.type === 'techpack') openTechpack(node.id);
+            else if (node.type === 'extract') openExtract(node.id);
           }}
           nodeTypes={nodeTypes}
           colorMode="dark"
@@ -274,6 +289,13 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         />
 
         <TechpackPanel open={!!editingTechpack} onClose={() => setEditingTechpack(null)} />
+
+        <ExtractPanel
+          open={!!editingExtract}
+          image={editingExtractImage}
+          onExtracted={(img) => { if (editingExtract) setNodeImage(editingExtract, img); }}
+          onClose={() => setEditingExtract(null)}
+        />
       </div>
     </StudioContext.Provider>
   );
