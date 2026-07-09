@@ -9,7 +9,18 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@freesewing/aaron": "^4.10.0",
+    "@freesewing/brian": "^4.10.0",
+    "@freesewing/config": "^4.10.0",
+    "@freesewing/core": "^4.10.0",
+    "@freesewing/hugo": "^4.10.0",
+    "@freesewing/models": "^4.10.0",
+    "@freesewing/paco": "^4.10.0",
+    "@freesewing/plugin-transform": "^4.10.0",
+    "@freesewing/teagan": "^4.10.0",
     "@google/genai": "^2.10.0",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.110.2",
     "@vercel/postgres": "^0.10.0",
     "@xyflow/react": "^12.11.2",
     "next": "16.2.10",

@@ -5,7 +5,7 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 
 export default function PatternNode({ id, data, selected }: NodeProps) {
-  const { setNodeImage } = useStudio();
+  const { setNodeImage, openPattern } = useStudio();
   const image = (data as { image?: string }).image;
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -25,12 +25,20 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} className="sn-handle" />
       <div className="sn-head">
         <span>Pattern maker</span>
-        <button
-          className="sn-edit nodrag"
-          onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-        >
-          {image ? 'replace' : 'upload'}
-        </button>
+        <div className="sn-actions">
+          <button
+            className="sn-edit nodrag"
+            onClick={(e) => { e.stopPropagation(); openPattern(id); }}
+          >
+            flatten
+          </button>
+          <button
+            className="sn-edit nodrag"
+            onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+          >
+            {image ? 'replace' : 'upload'}
+          </button>
+        </div>
         <input
           ref={fileRef}
           type="file"
@@ -39,8 +47,10 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
           onChange={(e) => { load(e.target.files?.[0]); e.currentTarget.value = ''; }}
         />
       </div>
-      <div className="sn-draw">
-        {image ? <img src={image} alt="Pattern" draggable={false} /> : <span className="sn-empty">upload your pattern</span>}
+      <div className="sn-draw" onDoubleClick={() => openPattern(id)}>
+        {image
+          ? <img src={image} alt="Pattern" draggable={false} />
+          : <span className="sn-empty">flatten a surface into a pattern</span>}
       </div>
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>

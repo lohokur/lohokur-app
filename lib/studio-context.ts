@@ -7,7 +7,11 @@ export type StudioCtx = {
   visualise: (id: string) => void;
   openTechpack: (id: string) => void;
   openExtract: (id: string) => void;
+  openPattern: (id: string) => void;
+  openManufacture: (id: string) => void;
+  openSample: (id: string) => void;
   setNodeImage: (id: string, image: string) => void;
+  promptImage: (id: string, prompt: string) => void;
 };
 
 export const StudioContext = createContext<StudioCtx>({
@@ -15,6 +19,10 @@ export const StudioContext = createContext<StudioCtx>({
   visualise: () => {},
   openTechpack: () => {},
   openExtract: () => {},
+  openPattern: () => {},
+  openManufacture: () => {},
+  openSample: () => {},
   setNodeImage: () => {},
+  promptImage: () => {},
 });
 export const useStudio = () => useContext(StudioContext);
