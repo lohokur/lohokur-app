@@ -43,7 +43,7 @@ export const NEXT: Partial<Record<StageKey, StageKey[]>> = {
   visualise: ['extract', 'studio'],
   image: ['studio'],
   studio: ['studio', 'extract'],
-  extract: ['pattern'],
+  extract: ['pattern', 'studio'],
   pattern: ['techpack'],
   techpack: ['sample', 'manufacture'],
   sample: ['manufacture', 'ship'],

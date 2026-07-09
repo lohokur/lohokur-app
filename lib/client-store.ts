@@ -32,7 +32,11 @@ export async function listProjects(): Promise<Project[]> {
   if (HAS_DB) {
     await migrateLocalProjects();
     const sb = supabaseBrowser();
-    const { data } = await sb.from('projects').select('*').order('updated_at', { ascending: false });
+    // list view: metadata only — never pull the (image-heavy) flow for every project
+    const { data } = await sb
+      .from('projects')
+      .select('id, name, created_at, updated_at')
+      .order('updated_at', { ascending: false });
     return (data ?? []).map(rowToProject);
   }
   return lread().sort((a, b) => b.updatedAt - a.updatedAt);

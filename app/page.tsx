@@ -212,7 +212,7 @@ export default function Home() {
                   <span className="hcode">{pad(slot.idx + 1)}</span>
                   <div className="hmeta">
                     <span className="hname">{slot.p.name}</span>
-                    <span className="hsub">{(slot.p.flow?.nodes?.length ?? 0)} nodes · {ago(slot.p.updatedAt)}</span>
+                    <span className="hsub">Edited {ago(slot.p.updatedAt)}</span>
                   </div>
                 </div>
               </a>
