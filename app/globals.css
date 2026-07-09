@@ -856,3 +856,5 @@ body {
 .run-btn .run-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink); }
 .run-btn.running .run-dot { animation: run-pulse .8s ease-in-out infinite; }
 @keyframes run-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+.topright { display: flex; gap: 8px; align-items: center; }

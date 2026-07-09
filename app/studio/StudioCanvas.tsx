@@ -134,6 +134,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [menu, setMenu] = useState<MenuState>(null); // right-click context menu
   const clipboard = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null); // in-app node copy buffer
+  const [running, setRunning] = useState(false); // Run-chain in flight
 
   // lightweight undo/redo history of the flow (nodes + edges)
   const hist = useRef<{ nodes: Node[]; edges: Edge[] }[]>([]);
@@ -359,6 +360,68 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     }
   }, [setNodeData]);
 
+  // Run the pipeline: walk nodes in dependency (topological) order and fire each
+  // automatable action — Visualise renders its sketch, Image/Brand-studio nodes
+  // re-run their saved prompt. Sequential + awaited so each downstream node sees
+  // its upstream output. Nodes that need human input (extract, techpack, sample,
+  // manufacture) are skipped. `startId` runs only that node + everything below it.
+  const runChain = useCallback(async (startId?: string) => {
+    if (running) return;
+    const ns = nodesRef.current;
+    const es = edgesRef.current;
+    const outAdj = new Map<string, string[]>();
+    ns.forEach((n) => outAdj.set(n.id, []));
+    es.forEach((e) => { if (outAdj.has(e.source)) outAdj.get(e.source)!.push(e.target); });
+
+    // scope = every node to run: all of them, or startId and its descendants
+    let scope: Set<string>;
+    if (startId) {
+      scope = new Set();
+      const stack = [startId];
+      while (stack.length) {
+        const id = stack.pop()!;
+        if (scope.has(id)) continue;
+        scope.add(id);
+        for (const nx of outAdj.get(id) ?? []) stack.push(nx);
+      }
+    } else {
+      scope = new Set(ns.map((n) => n.id));
+    }
+
+    // Kahn topological sort restricted to the scope
+    const indeg = new Map<string, number>();
+    scope.forEach((id) => indeg.set(id, 0));
+    for (const id of scope) for (const nx of outAdj.get(id) ?? []) if (scope.has(nx)) indeg.set(nx, (indeg.get(nx) ?? 0) + 1);
+    const queue = [...scope].filter((id) => (indeg.get(id) ?? 0) === 0);
+    const order: string[] = [];
+    while (queue.length) {
+      const id = queue.shift()!;
+      order.push(id);
+      for (const nx of outAdj.get(id) ?? []) {
+        if (!scope.has(nx)) continue;
+        indeg.set(nx, (indeg.get(nx) ?? 1) - 1);
+        if ((indeg.get(nx) ?? 0) === 0) queue.push(nx);
+      }
+    }
+
+    setMenu(null);
+    setRunning(true);
+    try {
+      for (const id of order) {
+        const n = nodesRef.current.find((x) => x.id === id);
+        const t = (n?.data as { type?: StageKey } | undefined)?.type;
+        const prompt = (n?.data as { prompt?: string } | undefined)?.prompt;
+        if (t === 'visualise') await visualise(id);
+        else if ((t === 'image' || t === 'studio') && prompt?.trim()) await promptImage(id, prompt);
+        else continue;
+        // let React commit the fresh image into nodesRef before the next node reads it
+        await new Promise((r) => setTimeout(r, 40));
+      }
+    } finally {
+      setRunning(false);
+    }
+  }, [running, visualise, promptImage]);
+
   // clear the spawn-flash pulse from a batch of nodes once it has played
   const flashOff = useCallback((ids: string[]) => {
     const s = new Set(ids);
@@ -421,6 +484,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     if (!ids.includes(node.id)) { ids = [node.id]; setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === node.id }))); }
     const multi = ids.length > 1;
     const items: MenuItem[] = [
+      { label: 'Run from here', shortcut: '▷', disabled: running, onClick: () => runChain(node.id) },
+      { sep: true },
       { label: multi ? `Duplicate ${ids.length}` : 'Duplicate', shortcut: '⌘D', onClick: () => duplicateNodes(ids) },
       { label: multi ? `Copy ${ids.length}` : 'Copy', shortcut: '⌘C', onClick: () => copyNodes(ids) },
       { label: 'Download image', disabled: multi || !nodeImage(node), onClick: () => downloadImage(node.id) },
@@ -428,7 +493,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       { label: multi ? `Delete ${ids.length}` : 'Delete', shortcut: '⌫', danger: true, onClick: () => deleteNodes(ids) },
     ];
     setMenu({ x: e.clientX, y: e.clientY, items });
-  }, [selectedIds, setNodes, duplicateNodes, copyNodes, downloadImage, deleteNodes]);
+  }, [selectedIds, setNodes, duplicateNodes, copyNodes, downloadImage, deleteNodes, runChain, running]);
 
   // right-click empty canvas → paste / select-all / fit
   const onPaneContextMenu = useCallback((e: React.MouseEvent | MouseEvent) => {
@@ -708,7 +773,17 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           </Panel>
 
           <Panel position="top-right">
-            <button className="save-btn" onClick={save}>{statusLabel}</button>
+            <div className="topright">
+              <button
+                className={`run-btn${running ? ' running' : ''}`}
+                onClick={() => runChain()}
+                disabled={running}
+                title="Run every automatable node in dependency order"
+              >
+                <span className="run-dot" />{running ? 'Running…' : 'Run'}
+              </button>
+              <button className="save-btn" onClick={save}>{statusLabel}</button>
+            </div>
           </Panel>
 
           <Panel position="center-left">
