@@ -117,7 +117,6 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<Project | null | undefined>(undefined);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [editing, setEditing] = useState<string | null>(null);
   const [editingTechpack, setEditingTechpack] = useState<string | null>(null);
   const [editingExtract, setEditingExtract] = useState<string | null>(null);
@@ -619,11 +618,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   const save = useCallback(async () => {
     if (!loaded.current) return;
-    setStatus('saving');
     await saveProject(projectId, { flow: { nodes, edges } });
     dirty.current = false;
-    setStatus('saved');
-    setTimeout(() => setStatus('idle'), 1400);
   }, [projectId, nodes, edges]);
 
   useEffect(() => {
@@ -708,11 +704,6 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     await saveProject(p.id, { flow: { nodes, edges } });
     router.push(`/studio/${p.id}`);
   }, [project, nodes, edges, router]);
-
-  const statusLabel = useMemo(
-    () => (status === 'saving' ? 'Saving…' : status === 'saved' ? 'Saved ✓' : 'Save'),
-    [status]
-  );
 
   // every image made on this canvas (sketches, visualisations, extracts, …) for the Library
   const libItems = useMemo<LibItem[]>(() => {
@@ -865,20 +856,6 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
               canUndo={histMeta.undo}
               canRedo={histMeta.redo}
             />
-          </Panel>
-
-          <Panel position="top-right">
-            <div className="topright">
-              <button
-                className={`run-btn${running ? ' running' : ''}`}
-                onClick={() => runChain()}
-                disabled={running}
-                title="Run every automatable node in dependency order"
-              >
-                <span className="run-dot" />{running ? 'Running…' : 'Run'}
-              </button>
-              <button className="save-btn" onClick={save}>{statusLabel}</button>
-            </div>
           </Panel>
 
           <Panel position="center-left">
