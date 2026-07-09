@@ -542,6 +542,25 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   const selectedIds = useCallback(() => nodesRef.current.filter((n) => n.selected).map((n) => n.id), []);
 
+  // action menu for a set of selected nodes, anchored on the right-clicked one
+  const nodeMenuItems = useCallback((anchor: Node, ids: string[]): MenuItem[] => {
+    const multi = ids.length > 1;
+    const groupable = ids.filter((id) => {
+      const n = nodesRef.current.find((x) => x.id === id);
+      return n && n.type !== 'group' && !n.parentId;
+    });
+    return [
+      { label: 'Run from here', shortcut: '▷', disabled: running, onClick: () => runChain(anchor.id) },
+      ...(groupable.length >= 2 ? [{ label: `Group ${groupable.length}`, shortcut: '⌘G', onClick: () => groupNodes(groupable) } as MenuItem] : []),
+      { sep: true },
+      { label: multi ? `Duplicate ${ids.length}` : 'Duplicate', shortcut: '⌘D', onClick: () => duplicateNodes(ids) },
+      { label: multi ? `Copy ${ids.length}` : 'Copy', shortcut: '⌘C', onClick: () => copyNodes(ids) },
+      { label: 'Download image', disabled: multi || !nodeImage(anchor), onClick: () => downloadImage(anchor.id) },
+      { sep: true },
+      { label: multi ? `Delete ${ids.length}` : 'Delete', shortcut: '⌫', danger: true, onClick: () => deleteNodes(ids) },
+    ];
+  }, [running, runChain, groupNodes, duplicateNodes, copyNodes, downloadImage, deleteNodes]);
+
   // right-click a node → act on the current selection (or just that node)
   const onNodeContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
     e.preventDefault();
@@ -556,23 +575,17 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     }
     let ids = selectedIds();
     if (!ids.includes(node.id)) { ids = [node.id]; setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === node.id }))); }
-    const multi = ids.length > 1;
-    const groupable = ids.filter((id) => {
-      const n = nodesRef.current.find((x) => x.id === id);
-      return n && n.type !== 'group' && !n.parentId;
-    });
-    const items: MenuItem[] = [
-      { label: 'Run from here', shortcut: '▷', disabled: running, onClick: () => runChain(node.id) },
-      ...(groupable.length >= 2 ? [{ label: `Group ${groupable.length}`, shortcut: '⌘G', onClick: () => groupNodes(groupable) } as MenuItem] : []),
-      { sep: true },
-      { label: multi ? `Duplicate ${ids.length}` : 'Duplicate', shortcut: '⌘D', onClick: () => duplicateNodes(ids) },
-      { label: multi ? `Copy ${ids.length}` : 'Copy', shortcut: '⌘C', onClick: () => copyNodes(ids) },
-      { label: 'Download image', disabled: multi || !nodeImage(node), onClick: () => downloadImage(node.id) },
-      { sep: true },
-      { label: multi ? `Delete ${ids.length}` : 'Delete', shortcut: '⌫', danger: true, onClick: () => deleteNodes(ids) },
-    ];
-    setMenu({ x: e.clientX, y: e.clientY, items });
-  }, [selectedIds, setNodes, duplicateNodes, copyNodes, downloadImage, deleteNodes, runChain, running, groupNodes, ungroup, deleteGroup]);
+    setMenu({ x: e.clientX, y: e.clientY, items: nodeMenuItems(node, ids) });
+  }, [selectedIds, setNodes, nodeMenuItems, ungroup, deleteGroup]);
+
+  // right-click the multi-select bounding box → same actions on the whole selection.
+  // ReactFlow fires this (not onNodeContextMenu/onPaneContextMenu) when the marquee
+  // selection overlay is under the cursor.
+  const onSelectionContextMenu = useCallback((e: React.MouseEvent, sel: Node[]) => {
+    e.preventDefault();
+    if (!sel.length) return;
+    setMenu({ x: e.clientX, y: e.clientY, items: nodeMenuItems(sel[0], sel.map((n) => n.id)) });
+  }, [nodeMenuItems]);
 
   // right-click empty canvas → paste / select-all / fit
   const onPaneContextMenu = useCallback((e: React.MouseEvent | MouseEvent) => {
@@ -809,6 +822,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           isValidConnection={isValidConnection}
           connectionRadius={44}
           onNodeContextMenu={onNodeContextMenu}
+          onSelectionContextMenu={onSelectionContextMenu}
           onPaneContextMenu={onPaneContextMenu}
           onNodeDoubleClick={(_e, node) => {
             if (node.type === 'sketch') openSketch(node.id);
