@@ -26,6 +26,7 @@ import ExtractNode from '@/components/ExtractNode';
 import StudioNode from '@/components/StudioNode';
 import ImageNode from '@/components/ImageNode';
 import WireEdge from '@/components/WireEdge';
+import CanvasMenu, { type MenuState, type MenuItem } from '@/components/CanvasMenu';
 import DotField from '@/components/DotField';
 import SketchStudio from '@/components/SketchStudio';
 import StudioLoader from '@/components/StudioLoader';
@@ -73,6 +74,43 @@ async function urlToDataUrl(url: string): Promise<string> {
   });
 }
 
+// the best displayable image a node holds (front view wins, else any view/image)
+function nodeImage(n?: Node): string | undefined {
+  const d = n?.data as { image?: string; views?: Record<string, string> } | undefined;
+  return d?.image ?? d?.views?.front ?? (d?.views ? Object.values(d.views).find((u) => typeof u === 'string') : undefined);
+}
+
+// clone a set of nodes with fresh ids, offset by (dx,dy); remaps only the edges
+// that live entirely inside the set so the copy keeps its internal wiring.
+function cloneNodes(src: Node[], allEdges: Edge[], dx: number, dy: number) {
+  const idMap = new Map<string, string>();
+  const newNodes: Node[] = src.map((n) => {
+    const type = (n.data as { type?: string } | undefined)?.type ?? 'node';
+    const nid = `${type}-${Date.now().toString(36)}-${counter++}`;
+    idMap.set(n.id, nid);
+    return {
+      ...n,
+      id: nid,
+      position: { x: n.position.x + dx, y: n.position.y + dy },
+      data: { ...(n.data as object) },
+      selected: true,
+      dragging: false,
+      className: 'spawn-flash',
+    } as Node;
+  });
+  const srcIds = new Set(src.map((n) => n.id));
+  const newEdges: Edge[] = allEdges
+    .filter((e) => srcIds.has(e.source) && srcIds.has(e.target))
+    .map((e) => ({
+      ...e,
+      id: `e-${Date.now().toString(36)}-${counter++}`,
+      source: idMap.get(e.source)!,
+      target: idMap.get(e.target)!,
+      selected: false,
+    }));
+  return { newNodes, newEdges };
+}
+
 export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<Project | null | undefined>(undefined);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -94,6 +132,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [menu, setMenu] = useState<MenuState>(null); // right-click context menu
+  const clipboard = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null); // in-app node copy buffer
 
   // lightweight undo/redo history of the flow (nodes + edges)
   const hist = useRef<{ nodes: Node[]; edges: Edge[] }[]>([]);
@@ -319,6 +359,105 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     }
   }, [setNodeData]);
 
+  // clear the spawn-flash pulse from a batch of nodes once it has played
+  const flashOff = useCallback((ids: string[]) => {
+    const s = new Set(ids);
+    setTimeout(() => setNodes((ns) => ns.map((n) => (s.has(n.id) ? { ...n, className: undefined } : n))), 1100);
+  }, [setNodes]);
+
+  // drop a freshly-cloned batch onto the canvas (deselecting whatever was selected)
+  const addClones = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+    setNodes((cur) => [...cur.map((n) => (n.selected ? { ...n, selected: false } : n)), ...newNodes]);
+    if (newEdges.length) setEdges((cur) => [...cur, ...newEdges]);
+    flashOff(newNodes.map((n) => n.id));
+  }, [setNodes, setEdges, flashOff]);
+
+  const copyNodes = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    const set = new Set(ids);
+    const ns = nodesRef.current.filter((n) => set.has(n.id)).map((n) => ({ ...n, data: { ...(n.data as object) } }));
+    const es = edgesRef.current.filter((e) => set.has(e.source) && set.has(e.target));
+    clipboard.current = { nodes: ns, edges: es };
+  }, []);
+
+  const pasteNodes = useCallback(() => {
+    const clip = clipboard.current;
+    if (!clip?.nodes.length) return;
+    const { newNodes, newEdges } = cloneNodes(clip.nodes, clip.edges, 40, 40);
+    addClones(newNodes, newEdges);
+  }, [addClones]);
+
+  const duplicateNodes = useCallback((ids: string[]) => {
+    const set = new Set(ids);
+    const src = nodesRef.current.filter((n) => set.has(n.id));
+    if (!src.length) return;
+    const { newNodes, newEdges } = cloneNodes(src, edgesRef.current, 40, 40);
+    addClones(newNodes, newEdges);
+  }, [addClones]);
+
+  const deleteNodes = useCallback((ids: string[]) => {
+    const set = new Set(ids);
+    setNodes((ns) => ns.filter((n) => !set.has(n.id)));
+    setEdges((es) => es.filter((e) => !set.has(e.source) && !set.has(e.target)));
+  }, [setNodes, setEdges]);
+
+  const downloadImage = useCallback(async (id: string) => {
+    const n = nodesRef.current.find((x) => x.id === id);
+    const url = nodeImage(n);
+    if (!url) return;
+    const href = url.startsWith('data:') ? url : await urlToDataUrl(url).catch(() => url);
+    const a = document.createElement('a');
+    const type = (n?.data as { type?: string } | undefined)?.type ?? 'image';
+    a.href = href; a.download = `${type}-${id}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+  }, []);
+
+  const selectedIds = useCallback(() => nodesRef.current.filter((n) => n.selected).map((n) => n.id), []);
+
+  // right-click a node → act on the current selection (or just that node)
+  const onNodeContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
+    e.preventDefault();
+    let ids = selectedIds();
+    if (!ids.includes(node.id)) { ids = [node.id]; setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === node.id }))); }
+    const multi = ids.length > 1;
+    const items: MenuItem[] = [
+      { label: multi ? `Duplicate ${ids.length}` : 'Duplicate', shortcut: '⌘D', onClick: () => duplicateNodes(ids) },
+      { label: multi ? `Copy ${ids.length}` : 'Copy', shortcut: '⌘C', onClick: () => copyNodes(ids) },
+      { label: 'Download image', disabled: multi || !nodeImage(node), onClick: () => downloadImage(node.id) },
+      { sep: true },
+      { label: multi ? `Delete ${ids.length}` : 'Delete', shortcut: '⌫', danger: true, onClick: () => deleteNodes(ids) },
+    ];
+    setMenu({ x: e.clientX, y: e.clientY, items });
+  }, [selectedIds, setNodes, duplicateNodes, copyNodes, downloadImage, deleteNodes]);
+
+  // right-click empty canvas → paste / select-all / fit
+  const onPaneContextMenu = useCallback((e: React.MouseEvent | MouseEvent) => {
+    e.preventDefault();
+    const items: MenuItem[] = [
+      { label: 'Paste', shortcut: '⌘V', disabled: !clipboard.current?.nodes.length, onClick: pasteNodes },
+      { label: 'Select all', shortcut: '⌘A', onClick: () => setNodes((ns) => ns.map((n) => ({ ...n, selected: true }))) },
+      { label: 'Fit to view', onClick: () => rf.current?.fitView({ duration: 400, padding: 0.2 }) },
+    ];
+    setMenu({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, items });
+  }, [pasteNodes, setNodes]);
+
+  // ⌘C copy · ⌘D duplicate · ⌘V paste · ⌘A select-all — ignored while typing
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const k = e.key.toLowerCase();
+      const sel = nodesRef.current.filter((n) => n.selected).map((n) => n.id);
+      if (k === 'c' && sel.length) { e.preventDefault(); copyNodes(sel); }
+      else if (k === 'd' && sel.length) { e.preventDefault(); duplicateNodes(sel); }
+      else if (k === 'v' && clipboard.current?.nodes.length) { e.preventDefault(); pasteNodes(); }
+      else if (k === 'a') { e.preventDefault(); setNodes((ns) => ns.map((n) => ({ ...n, selected: true }))); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [copyNodes, duplicateNodes, pasteNodes, setNodes]);
+
   const save = useCallback(async () => {
     if (!loaded.current) return;
     setStatus('saving');
@@ -523,6 +662,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onMove={(_, vp) => { viewportRef.current = vp; }}
           isValidConnection={isValidConnection}
           connectionRadius={44}
+          onNodeContextMenu={onNodeContextMenu}
+          onPaneContextMenu={onPaneContextMenu}
           onNodeDoubleClick={(_e, node) => {
             if (node.type === 'sketch') openSketch(node.id);
             else if (node.type === 'techpack') openTechpack(node.id);
@@ -545,7 +686,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           zoomOnScroll={false}           /* scroll pans; pinch still zooms */
           zoomOnPinch
           selectionOnDrag                /* left-drag on empty canvas = marquee select */
-          panOnDrag={[1, 2]}             /* pan with middle / right drag instead */
+          panOnDrag={[1]}                /* middle-drag pans; right is free for the context menu */
           selectionMode={SelectionMode.Partial} /* grab nodes the box even partially touches */
           multiSelectionKeyCode={['Shift', 'Meta']}
         >
@@ -623,6 +764,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         />
       </div>
       {libraryOpen && <StudioLibrary items={libItems} onClose={() => setLibraryOpen(false)} />}
+
+      <CanvasMenu menu={menu} onClose={() => setMenu(null)} />
+
 
       {(booting || project === undefined) && <StudioLoader progress={progress} onDone={() => setBooting(false)} />}
 
