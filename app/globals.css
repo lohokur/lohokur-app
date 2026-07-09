@@ -858,3 +858,20 @@ body {
 @keyframes run-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 
 .topright { display: flex; gap: 8px; align-items: center; }
+
+/* ---------- group frame ---------- */
+.group-node {
+  width: 100%; height: 100%; border-radius: 16px;
+  border: 1px solid var(--glass-line); background: rgba(169, 240, 208, 0.035);
+  box-shadow: inset 0 0 40px -20px rgba(169, 240, 208, 0.25);
+}
+.group-node.selected { border-color: var(--mint); box-shadow: 0 0 0 2px rgba(169, 240, 208, 0.4); }
+.group-bar { position: absolute; top: 9px; left: 14px; display: flex; align-items: center; }
+.group-label, .group-label-input {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mint);
+}
+.group-label { cursor: text; user-select: none; }
+.group-label-input {
+  background: rgba(0, 0, 0, 0.35); border: 1px solid var(--glass-line);
+  border-radius: 6px; padding: 2px 7px; color: var(--fg); outline: none;
+}

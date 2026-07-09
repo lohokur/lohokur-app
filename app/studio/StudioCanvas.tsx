@@ -25,6 +25,7 @@ import SampleNode from '@/components/SampleNode';
 import ExtractNode from '@/components/ExtractNode';
 import StudioNode from '@/components/StudioNode';
 import ImageNode from '@/components/ImageNode';
+import GroupNode from '@/components/GroupNode';
 import WireEdge from '@/components/WireEdge';
 import CanvasMenu, { type MenuState, type MenuItem } from '@/components/CanvasMenu';
 import DotField from '@/components/DotField';
@@ -58,6 +59,7 @@ const nodeTypes = {
   techpack: TechpackNode,
   sample: SampleNode,
   manufacture: ManufactureNode,
+  group: GroupNode,
 };
 const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', studio: 'studio', image: 'image', extract: 'extract', pattern: 'pattern', techpack: 'techpack', sample: 'sample', manufacture: 'manufacture' };
 const edgeTypes = { wire: WireEdge };
@@ -464,6 +466,69 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     setEdges((es) => es.filter((e) => !set.has(e.source) && !set.has(e.target)));
   }, [setNodes, setEdges]);
 
+  // wrap a selection in a group frame so they move together
+  const groupNodes = useCallback((ids: string[]) => {
+    const set = new Set(ids);
+    const kids = nodesRef.current.filter((n) => set.has(n.id) && n.type !== 'group' && !n.parentId);
+    if (kids.length < 2) return;
+    const PAD = 30, HEAD = 40;
+    const dim = (n: Node) => {
+      const m = (n as { measured?: { width?: number; height?: number } }).measured;
+      return { w: m?.width ?? 340, h: m?.height ?? 200 };
+    };
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const n of kids) {
+      const { w, h } = dim(n);
+      minX = Math.min(minX, n.position.x); minY = Math.min(minY, n.position.y);
+      maxX = Math.max(maxX, n.position.x + w); maxY = Math.max(maxY, n.position.y + h);
+    }
+    const gx = minX - PAD, gy = minY - PAD - HEAD;
+    const gw = maxX - minX + PAD * 2, gh = maxY - minY + PAD * 2 + HEAD;
+    const gid = `group-${Date.now().toString(36)}-${counter++}`;
+    const group: Node = {
+      id: gid, type: 'group', position: { x: gx, y: gy },
+      data: { type: 'group', label: 'Group' }, style: { width: gw, height: gh },
+      selected: true, className: 'spawn-flash',
+    };
+    const kidSet = new Set(kids.map((k) => k.id));
+    setNodes((cur) => {
+      const rest = cur.filter((n) => !kidSet.has(n.id)).map((n) => (n.selected ? { ...n, selected: false } : n));
+      const reparented = kids.map((n) => ({
+        ...n, parentId: gid, extent: 'parent' as const,
+        position: { x: n.position.x - gx, y: n.position.y - gy }, selected: false,
+      }));
+      return [group, ...reparented, ...rest]; // parent must precede its children
+    });
+    flashOff([gid]);
+  }, [setNodes, flashOff]);
+
+  // dissolve a group frame, restoring its children to absolute positions
+  const ungroup = useCallback((gid: string) => {
+    const g = nodesRef.current.find((n) => n.id === gid);
+    if (!g) return;
+    const { x: gx, y: gy } = g.position;
+    setNodes((cur) =>
+      cur
+        .filter((n) => n.id !== gid)
+        .map((n) =>
+          n.parentId === gid
+            ? { ...n, parentId: undefined, extent: undefined, position: { x: n.position.x + gx, y: n.position.y + gy }, selected: true }
+            : n
+        )
+    );
+  }, [setNodes]);
+
+  // remove a group frame together with everything inside it
+  const deleteGroup = useCallback((gid: string) => {
+    const ids = [gid, ...nodesRef.current.filter((n) => n.parentId === gid).map((n) => n.id)];
+    deleteNodes(ids);
+  }, [deleteNodes]);
+
+  const renameGroup = useCallback(
+    (id: string, label: string) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, label } } : n))),
+    [setNodes]
+  );
+
   const downloadImage = useCallback(async (id: string) => {
     const n = nodesRef.current.find((x) => x.id === id);
     const url = nodeImage(n);
@@ -480,11 +545,25 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   // right-click a node → act on the current selection (or just that node)
   const onNodeContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
     e.preventDefault();
+    // a group frame gets its own menu
+    if (node.type === 'group') {
+      setMenu({ x: e.clientX, y: e.clientY, items: [
+        { label: 'Ungroup', shortcut: '⌘⇧G', onClick: () => ungroup(node.id) },
+        { sep: true },
+        { label: 'Delete group + contents', shortcut: '⌫', danger: true, onClick: () => deleteGroup(node.id) },
+      ] });
+      return;
+    }
     let ids = selectedIds();
     if (!ids.includes(node.id)) { ids = [node.id]; setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === node.id }))); }
     const multi = ids.length > 1;
+    const groupable = ids.filter((id) => {
+      const n = nodesRef.current.find((x) => x.id === id);
+      return n && n.type !== 'group' && !n.parentId;
+    });
     const items: MenuItem[] = [
       { label: 'Run from here', shortcut: '▷', disabled: running, onClick: () => runChain(node.id) },
+      ...(groupable.length >= 2 ? [{ label: `Group ${groupable.length}`, shortcut: '⌘G', onClick: () => groupNodes(groupable) } as MenuItem] : []),
       { sep: true },
       { label: multi ? `Duplicate ${ids.length}` : 'Duplicate', shortcut: '⌘D', onClick: () => duplicateNodes(ids) },
       { label: multi ? `Copy ${ids.length}` : 'Copy', shortcut: '⌘C', onClick: () => copyNodes(ids) },
@@ -493,7 +572,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       { label: multi ? `Delete ${ids.length}` : 'Delete', shortcut: '⌫', danger: true, onClick: () => deleteNodes(ids) },
     ];
     setMenu({ x: e.clientX, y: e.clientY, items });
-  }, [selectedIds, setNodes, duplicateNodes, copyNodes, downloadImage, deleteNodes, runChain, running]);
+  }, [selectedIds, setNodes, duplicateNodes, copyNodes, downloadImage, deleteNodes, runChain, running, groupNodes, ungroup, deleteGroup]);
 
   // right-click empty canvas → paste / select-all / fit
   const onPaneContextMenu = useCallback((e: React.MouseEvent | MouseEvent) => {
@@ -518,10 +597,12 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       else if (k === 'd' && sel.length) { e.preventDefault(); duplicateNodes(sel); }
       else if (k === 'v' && clipboard.current?.nodes.length) { e.preventDefault(); pasteNodes(); }
       else if (k === 'a') { e.preventDefault(); setNodes((ns) => ns.map((n) => ({ ...n, selected: true }))); }
+      else if (k === 'g' && !e.shiftKey) { e.preventDefault(); groupNodes(sel); }
+      else if (k === 'g' && e.shiftKey) { e.preventDefault(); nodesRef.current.filter((n) => n.selected && n.type === 'group').forEach((n) => ungroup(n.id)); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [copyNodes, duplicateNodes, pasteNodes, setNodes]);
+  }, [copyNodes, duplicateNodes, pasteNodes, setNodes, groupNodes, ungroup]);
 
   const save = useCallback(async () => {
     if (!loaded.current) return;
@@ -714,7 +795,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   }
 
   return (
-    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, openExtract, openPattern, openManufacture, openSample, setNodeImage, promptImage }}>
+    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, openExtract, openPattern, openManufacture, openSample, setNodeImage, promptImage, renameGroup }}>
       <div className={`studio${booting || project === undefined ? ' emerging' : ''}`}>
         <DotField viewportRef={viewportRef} />
         <ReactFlow
