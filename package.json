@@ -20,6 +20,7 @@
     "@freesewing/plugin-transform": "^4.10.0",
     "@freesewing/teagan": "^4.10.0",
     "@google/genai": "^2.10.0",
+    "@huggingface/transformers": "^4.2.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.2",
     "@vercel/postgres": "^0.10.0",
