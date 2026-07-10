@@ -952,11 +952,21 @@ body {
 .vis-card.on { border-color: var(--mint); opacity: 1; box-shadow: 0 0 0 1px var(--mint); }
 .vis-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.vis-inputs { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-top: 1px solid var(--glass-line); }
-.vis-thumb { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 7px; overflow: hidden;
-  border: 1.5px solid var(--glass-line); padding: 0; background: none; cursor: pointer; opacity: .5;
-  transition: opacity .12s ease, border-color .12s ease; }
-.vis-thumb:hover { opacity: .8; }
-.vis-thumb.on { opacity: 1; border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint); }
-.vis-thumb.vis-sketch { border-style: dashed; }   /* sketch inputs read as dashed, images solid */
-.vis-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* input cards — horizontal row under the big card; drag to reorder, click to preview */
+.vis-inputs { display: flex; gap: 7px; overflow-x: auto; padding: 9px 8px; border-top: 1px solid var(--glass-line); }
+.vis-inputs::-webkit-scrollbar { height: 5px; }
+.vis-inputs::-webkit-scrollbar-thumb { background: var(--glass-line); border-radius: 3px; }
+.vis-in-card { position: relative; flex: 0 0 auto; width: 46px; height: 60px; border-radius: 8px;
+  overflow: hidden; padding: 0; background: #16191b; cursor: grab;
+  border: 1.5px solid var(--glass-line); opacity: .78;
+  transition: opacity .12s ease, border-color .12s ease, transform .1s ease; }
+.vis-in-card:hover { opacity: 1; }
+.vis-in-card:active { cursor: grabbing; }
+.vis-in-card.vis-sketch { border-style: dashed; }        /* sketches dashed, images solid */
+.vis-in-card.primary { border-color: var(--mint); opacity: 1; box-shadow: 0 0 0 1px var(--mint); }
+.vis-in-card.preview { outline: 2px solid #fff; outline-offset: 1px; }
+.vis-in-card.dragging { opacity: .4; transform: scale(.94); }
+.vis-in-card img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+/* little corner dot marking the primary (processed) card */
+.vis-primary-dot { position: absolute; top: 3px; left: 3px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--mint); box-shadow: 0 0 0 1.5px rgba(0,0,0,.5); }

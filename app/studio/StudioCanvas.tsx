@@ -222,36 +222,36 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const visualise = useCallback(
     async (id: string) => {
       const node = nodesRef.current.find((n) => n.id === id);
-      const sel = (node?.data as { sel?: string[] } | undefined)?.sel;
-      // connected input nodes (optionally filtered to the selected thumbnails)
-      let inputs = edgesRef.current
+      const order = (node?.data as { order?: string[] } | undefined)?.order ?? [];
+      // connected input nodes, ordered by the node's saved card order (first = primary)
+      const inputs = edgesRef.current
         .filter((e) => e.target === id)
         .map((e) => nodesRef.current.find((n) => n.id === e.source))
-        .filter((n): n is Node => !!n);
-      if (sel) inputs = inputs.filter((n) => sel.includes(n.id));
+        .filter((n): n is Node => !!n)
+        .sort((a, b) => {
+          const ia = order.indexOf(a.id), ib = order.indexOf(b.id);
+          return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
+        });
 
-      const sketches: string[] = [];
-      const refs: string[] = [];
+      const payload: { url: string; kind: string }[] = [];
       for (const n of inputs) {
         const nd = n.data as { image?: string; views?: Record<string, string> };
         const img = nd.image ?? nd.views?.front;
-        if (!img) continue;
-        if (n.type === 'sketch') sketches.push(img);
-        else refs.push(img); // image (or other) → style/garment reference
+        if (img) payload.push({ url: img, kind: (n.type as string) || 'image' });
       }
-      if (!sketches.length && !refs.length) {
+      if (!payload.length) {
         setNodeData(id, { note: 'plug in a sketch or image, then run' });
         setTimeout(() => setNodeData(id, { note: undefined }), 2600);
         return;
       }
 
       const base = await urlToDataUrl('/base.jpg');
-      setNodeData(id, { loading: true, note: 'rendering…' }); // keep the current card visible
+      setNodeData(id, { loading: true, note: 'rendering…', preview: undefined }); // keep the current card visible
       try {
         const r = await fetch('/api/visualise', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ base, sketches, images: refs }),
+          body: JSON.stringify({ base, inputs: payload }),
         });
         const j = await r.json();
         if (j.image) {

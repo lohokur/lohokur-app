@@ -10,51 +10,19 @@ const FRAMING =
 
 const BASE = 'The FIRST image is the base model: a real photo of a faceless figure in a plain black bodysuit, standing front-facing in a bare concrete room with a wiring panel on the wall.';
 
-function promptFor(view: string) {
-  if (view === 'back') {
-    return [
-      BASE,
-      'The SECOND image is a sketch of the BACK of a garment / outfit design.',
-      'Turn the figure AROUND so we see it from BEHIND — its back to the camera — in the exact same room, lighting and standing pose (mirrored). Dress it in the garment, faithfully showing the BACK design from the sketch.',
-      FRAMING,
-      'Only add the sketched clothing; anything it does not cover stays the black bodysuit. Photorealistic, sharp, full-length head to feet.',
-    ].join(' ');
-  }
-  if (view === 'side') {
-    return [
-      BASE,
-      'The SECOND image is a sketch of the SIDE of a garment / outfit design.',
-      'Turn the figure to a SIDE PROFILE (facing to one side) in the exact same room, lighting and stance. Dress it in the garment, faithfully showing the SIDE design from the sketch.',
-      FRAMING,
-      'Only add the sketched clothing; anything it does not cover stays the black bodysuit. Photorealistic, sharp, full-length head to feet.',
-    ].join(' ');
-  }
-  // front (default)
-  return [
-    BASE,
-    'The SECOND image is a rough hand-drawn sketch of a garment / outfit design (front view).',
-    'Dress the base figure in the garment(s) from the sketch, faithfully translating the sketched design — silhouette, proportions, layers, key details — into real, well-made clothing worn by the figure.',
-    FRAMING,
-    'KEEP EVERYTHING ELSE IDENTICAL to the base photo: same faceless figure, body, pose, room, wall, floor, wiring panel and lighting. Only add the sketched clothing; uncovered areas stay black bodysuit.',
-    'Output a single photorealistic, full-length image — the base photo with the designed outfit now worn, head to feet.',
-  ].join(' ');
-}
-
-// Combined mode: dress the base model in one or more design sketches, using any
-// plugged-in reference images for material/colour/style. Image order passed to the
-// model is: [base, ...sketches, ...references].
-function combinedPrompt(nSketch: number, nRef: number) {
+// Ordered mode: the FIRST plugged-in input is the primary design to realise; any
+// remaining inputs are style/material references. Image order to the model is
+// [base, primary, ...references].
+function orderedPrompt(primaryKind: string, nRef: number) {
   const parts = [BASE];
-  if (nSketch > 0) {
-    parts.push(
-      `The next ${nSketch} image${nSketch > 1 ? 's are' : ' is a'} hand-drawn DESIGN SKETCH${nSketch > 1 ? 'es' : ''} of garments/outfits. Dress the figure in ${nSketch > 1 ? 'these designs' : 'this design'}, faithfully translating the sketched design — silhouette, proportions, layers, key details — into real, well-made clothing worn by the figure.`,
-    );
-  }
+  parts.push(
+    primaryKind === 'sketch'
+      ? 'The SECOND image is a hand-drawn DESIGN SKETCH of a garment / outfit. Dress the figure in this design, faithfully translating the sketch — silhouette, proportions, layers, key details — into real, well-made clothing worn by the figure.'
+      : 'The SECOND image is a garment / outfit. Dress the figure in it, faithfully reproducing it as real, well-made clothing worn by the figure.',
+  );
   if (nRef > 0) {
     parts.push(
-      nSketch > 0
-        ? `The final ${nRef} image${nRef > 1 ? 's are' : ' is a'} STYLE REFERENCE${nRef > 1 ? 's' : ''} — use ${nRef > 1 ? 'them' : 'it'} ONLY for material, colour, texture, print and styling cues to inform how the garments look. Do NOT reproduce ${nRef > 1 ? 'them' : 'it'} as separate objects.`
-        : `The next ${nRef} image${nRef > 1 ? 's show garments/outfits' : ' shows a garment/outfit'} to wear. Dress the figure in ${nRef > 1 ? 'them' : 'it'}, faithfully reproducing the garment${nRef > 1 ? 's' : ''} as real worn clothing.`,
+      `The remaining ${nRef} image${nRef > 1 ? 's are' : ' is a'} STYLE REFERENCE${nRef > 1 ? 's' : ''} — use ${nRef > 1 ? 'them' : 'it'} ONLY for material, colour, texture, print and styling cues to inform how the garment looks. Do NOT reproduce ${nRef > 1 ? 'them' : 'it'} as separate objects.`,
     );
   }
   parts.push(FRAMING);
@@ -64,15 +32,18 @@ function combinedPrompt(nSketch: number, nRef: number) {
   return parts.join(' ');
 }
 
+type Input = { url: string; kind: string };
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
-  const { sketch, base, view } = body as { sketch?: string; base?: string; view?: string };
-  const sketches: string[] = Array.isArray(body.sketches) ? body.sketches.filter((x: unknown) => typeof x === 'string') : [];
-  const refs: string[] = Array.isArray(body.images) ? body.images.filter((x: unknown) => typeof x === 'string') : [];
-  const combined = sketches.length > 0 || refs.length > 0;
+  const { sketch, base } = body as { sketch?: string; base?: string };
+  const inputs: Input[] = Array.isArray(body.inputs)
+    ? body.inputs.filter((i: unknown): i is Input => !!i && typeof (i as Input).url === 'string')
+    : [];
+  const ordered = inputs.length > 0;
 
   if (!base) return NextResponse.json({ error: 'missing base image' }, { status: 400 });
-  if (!combined && !sketch) return NextResponse.json({ error: 'plug in a sketch or image first' }, { status: 400 });
+  if (!ordered && !sketch) return NextResponse.json({ error: 'plug in a sketch or image first' }, { status: 400 });
 
   const gate = await consumeGeneration();
   if (!gate.ok) {
@@ -82,9 +53,11 @@ export async function POST(req: Request) {
     );
   }
   try {
-    // image order matters — the prompt refers to FIRST / next / final images by position
-    const prompt = combined ? combinedPrompt(sketches.length, refs.length) : promptFor(view || 'front');
-    const imgs = combined ? [base, ...sketches, ...refs] : [base, sketch!];
+    // image order matters — the prompt refers to images by position (base, primary, refs)
+    const primary = ordered ? inputs[0] : { url: sketch!, kind: 'sketch' };
+    const refs = ordered ? inputs.slice(1) : [];
+    const prompt = orderedPrompt(primary.kind, refs.length);
+    const imgs = [base, primary.url, ...refs.map((r) => r.url)];
     const image = await editImage(prompt, imgs);
     return NextResponse.json({ image });
   } catch (e) {

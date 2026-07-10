@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Handle, Position, useReactFlow, useNodeConnections, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import type { VisResult } from '@/lib/nodeTypes';
@@ -8,7 +9,8 @@ type Data = {
   image?: string;
   results?: VisResult[];
   active?: number;
-  sel?: string[]; // selected input node-ids (undefined = all connected)
+  order?: string[];   // input node-ids, first = primary (shown + processed)
+  preview?: string;   // input node-id currently previewed in the main card
   loading?: boolean;
   note?: string;
 };
@@ -18,13 +20,10 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
   const rf = useReactFlow();
   const conns = useNodeConnections({ id, handleType: 'target' });
   const d = data as Data;
+  const [dragId, setDragId] = useState<string | null>(null);
 
-  const results = d.results ?? [];
-  const active = results.length ? Math.min(d.active ?? results.length - 1, results.length - 1) : -1;
-  const card = results[active]?.image ?? d.image;
-
-  // every connected input that has a thumbnail (image node or sketch node)
-  const inputs = conns
+  // connected inputs that have a thumbnail (image or sketch nodes)
+  const inputsRaw = conns
     .map((c) => rf.getNode(c.source))
     .filter(Boolean)
     .map((n) => {
@@ -34,13 +33,28 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
     })
     .filter((x): x is { id: string; kind: string; thumb: string } => !!x);
 
-  const sel = d.sel ?? inputs.map((i) => i.id); // default: all selected
-  const isSel = (iid: string) => sel.includes(iid);
-  const toggle = (iid: string) => {
-    const next = isSel(iid) ? sel.filter((x) => x !== iid) : [...sel, iid];
-    rf.updateNodeData(id, { sel: next });
+  // apply the saved order (new inputs append to the end)
+  const ids = inputsRaw.map((i) => i.id);
+  const saved = (d.order ?? []).filter((x) => ids.includes(x));
+  const order = [...saved, ...ids.filter((x) => !saved.includes(x))];
+  const inputs = order.map((x) => inputsRaw.find((i) => i.id === x)!).filter(Boolean);
+  const primary = inputs[0];
+
+  const results = d.results ?? [];
+  const active = results.length ? Math.min(d.active ?? results.length - 1, results.length - 1) : -1;
+
+  // what shows in the big card: previewed input → active result → primary input
+  const previewInput = d.preview ? inputs.find((i) => i.id === d.preview) : undefined;
+  const card = previewInput?.thumb ?? results[active]?.image ?? d.image ?? primary?.thumb;
+
+  const reorder = (targetId: string) => {
+    if (!dragId || dragId === targetId) return;
+    const next = order.filter((x) => x !== dragId);
+    const at = next.indexOf(targetId);
+    next.splice(at, 0, dragId);
+    rf.updateNodeData(id, { order: next });
+    setDragId(null);
   };
-  const selCount = inputs.filter((i) => isSel(i.id)).length;
 
   return (
     <div className={`stage-node visualise-node${selected ? ' selected' : ''}`}>
@@ -50,7 +64,7 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
         <button
           className="sn-edit nodrag"
           onClick={(e) => { e.stopPropagation(); visualise(id); }}
-          disabled={d.loading || !inputs.length || !selCount}
+          disabled={d.loading || !inputs.length}
         >
           {d.loading ? '…' : results.length ? 'visualise' : 'run'}
         </button>
@@ -66,15 +80,15 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
         )}
       </div>
 
-      {/* gallery of generated cards — click a card to make it active */}
+      {/* generated cards — click one to make it active in the big card */}
       {results.length > 1 && (
         <div className="vis-results nodrag nowheel">
           {results.map((r, i) => (
             <button
               key={r.id}
-              className={`vis-card${i === active ? ' on' : ''}`}
+              className={`vis-card${i === active && !previewInput ? ' on' : ''}`}
               title={`render ${i + 1}`}
-              onClick={(e) => { e.stopPropagation(); rf.updateNodeData(id, { active: i, image: r.image }); }}
+              onClick={(e) => { e.stopPropagation(); rf.updateNodeData(id, { active: i, image: r.image, preview: undefined }); }}
             >
               <img src={r.image} alt="" draggable={false} />
             </button>
@@ -82,17 +96,24 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
         </div>
       )}
 
-      {/* plugged-in inputs — tap to include/exclude from the next render */}
+      {/* plugged-in inputs as cards — drag to reorder (first = primary/processed);
+          click to preview it in the big card above */}
       {inputs.length > 0 && (
         <div className="vis-inputs nodrag nowheel">
-          {inputs.map((inp) => (
+          {inputs.map((inp, i) => (
             <button
               key={inp.id}
-              className={`vis-thumb vis-${inp.kind}${isSel(inp.id) ? ' on' : ''}`}
-              title={`${inp.kind}${isSel(inp.id) ? ' — in this render' : ' — tap to include'}`}
-              onClick={(e) => { e.stopPropagation(); toggle(inp.id); }}
+              draggable
+              className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${previewInput?.id === inp.id ? ' preview' : ''}${dragId === inp.id ? ' dragging' : ''}`}
+              title={`${inp.kind}${i === 0 ? ' — primary (processed on Run)' : ''} · drag to reorder, click to preview`}
+              onClick={(e) => { e.stopPropagation(); rf.updateNodeData(id, { preview: previewInput?.id === inp.id ? undefined : inp.id }); }}
+              onDragStart={() => setDragId(inp.id)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); reorder(inp.id); }}
+              onDragEnd={() => setDragId(null)}
             >
               <img src={inp.thumb} alt="" draggable={false} />
+              {i === 0 && <span className="vis-primary-dot" />}
             </button>
           ))}
         </div>
