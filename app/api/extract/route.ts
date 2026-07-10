@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { falEdit } from '@/lib/fal';
+import { editImage } from '@/lib/imagegen';
 import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 
 export const maxDuration = 300;
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     );
   }
   try {
-    const out = await falEdit(prompt, [image]);
+    const out = await editImage(prompt, [image]);
     return NextResponse.json({ image: out });
   } catch (e) {
     await refundGeneration();

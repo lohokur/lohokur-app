@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { Stage, StageKey } from '@/lib/nodeTypes';
+import { HOTKEY_FOR, type Stage, type StageKey } from '@/lib/nodeTypes';
 
 // line icons (24x24, stroke) for each pipeline stage
 const ICONS: Record<StageKey, ReactNode> = {
@@ -81,10 +81,10 @@ export default function StudioDock({ stages, onAdd, onLibrary, onProfile, isLock
             className={`dock-btn${locked ? ' locked' : ''}`}
             onClick={() => (locked ? onLocked?.(s.key) : onAdd(s.key))}
             aria-label={locked ? `${s.label} (upgrade to unlock)` : s.label}
-            title={locked ? `${s.label} — upgrade to unlock` : s.hint}
+            title={locked ? `${s.label} — upgrade to unlock` : `${s.hint}${HOTKEY_FOR[s.key] ? `  ·  ${HOTKEY_FOR[s.key]!.toUpperCase()}` : ''}`}
           >
             <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true">{ICONS[s.key]}</svg>
-            <span className="dock-label">{s.label}</span>
+            <span className="dock-label">{s.label}{HOTKEY_FOR[s.key] && <kbd className="dock-key">{HOTKEY_FOR[s.key]!.toUpperCase()}</kbd>}</span>
             {locked && (
               <svg className="dock-lock" viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />

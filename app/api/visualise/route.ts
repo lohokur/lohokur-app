@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { falEdit } from '@/lib/fal';
+import { editImage } from '@/lib/imagegen';
 import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 
 // Image generation can take a while (~30–90s).
@@ -54,9 +54,10 @@ export async function POST(req: Request) {
   }
   try {
     // base first, then the garment sketch — matches promptFor()'s FIRST/SECOND image wording.
-    const image = await falEdit(promptFor(view || 'front'), [base, sketch]);
+    const image = await editImage(promptFor(view || 'front'), [base, sketch]);
     return NextResponse.json({ image });
   } catch (e) {
+    console.error('[visualise] view=%s failed:', view, (e as Error).message);
     await refundGeneration();
     return NextResponse.json({ error: (e as Error).message || 'generation failed' }, { status: 500 });
   }

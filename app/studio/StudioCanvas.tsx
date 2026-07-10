@@ -41,7 +41,7 @@ import PatternProtoPanel from '@/components/PatternProtoPanel';
 import ManufacturePanel from '@/components/ManufacturePanel';
 import SamplePanel from '@/components/SamplePanel';
 import { StudioContext } from '@/lib/studio-context';
-import { STAGES, NEXT, VIEWS, type StageKey, type View } from '@/lib/nodeTypes';
+import { STAGES, NEXT, VIEWS, STAGE_HOTKEYS, type StageKey, type View } from '@/lib/nodeTypes';
 import type { Techpack } from '@/lib/techpack';
 import type { ChosenManufacturer } from '@/lib/manufacturers';
 import type { Sample } from '@/lib/sample';
@@ -309,6 +309,22 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     },
     [setNodes, stageLocked, router]
   );
+
+  // single-key shortcuts spawn nodes — ignored while typing or an editor/panel is open
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (editing || editingTechpack || editingExtract || editingPattern || editingManufacture || editingSample || settingsOpen || libraryOpen) return;
+      const type = STAGE_HOTKEYS[e.key.toLowerCase()];
+      if (!type) return;
+      e.preventDefault();
+      addNode(type);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [addNode, editing, editingTechpack, editingExtract, editingPattern, editingManufacture, editingSample, settingsOpen, libraryOpen]);
 
   // drop an image straight onto the canvas (paste / upload) as a ready Image node
   const addImageNode = useCallback((image: string) => {

@@ -30,6 +30,25 @@ export const STAGE_MAP: Record<string, Stage> = Object.fromEntries(
   STAGES.map((s) => [s.key, s])
 );
 
+// single-key shortcuts (no modifiers) that spawn each node on the canvas
+export const STAGE_HOTKEYS: Record<string, StageKey> = {
+  s: 'sketch',
+  v: 'visualise',
+  b: 'studio',
+  i: 'image',
+  e: 'extract',
+  p: 'pattern',
+  t: 'techpack',
+  c: 'sample',
+  m: 'manufacture',
+  h: 'ship',
+};
+
+// reverse map: stage key → its hotkey (for dock hints)
+export const HOTKEY_FOR: Partial<Record<StageKey, string>> = Object.fromEntries(
+  Object.entries(STAGE_HOTKEYS).map(([k, v]) => [v, k])
+);
+
 // Garment views a sketch can hold; visualise renders each connected view.
 export const VIEWS = ['front', 'side', 'back'] as const;
 export type View = (typeof VIEWS)[number];
@@ -41,7 +60,7 @@ export type View = (typeof VIEWS)[number];
 export const NEXT: Partial<Record<StageKey, StageKey[]>> = {
   sketch: ['visualise'],
   visualise: ['extract', 'studio'],
-  image: ['studio'],
+  image: ['visualise', 'studio'],
   studio: ['studio', 'extract'],
   extract: ['pattern', 'studio'],
   pattern: ['techpack'],

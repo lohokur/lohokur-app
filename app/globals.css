@@ -909,3 +909,8 @@ body {
 .dock-lock { position: absolute; right: 5px; top: 5px; width: 12px; height: 12px;
   fill: none; stroke: var(--mint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .dock-btn { position: relative; }
+
+/* dock: hotkey keycap shown in the expanded label */
+.dock-key { margin-left: 7px; font-family: var(--mono); font-size: 9.5px; line-height: 1;
+  padding: 2px 5px; border-radius: 4px; color: var(--muted);
+  background: rgba(255,255,255,.06); border: 1px solid var(--glass-line); }
