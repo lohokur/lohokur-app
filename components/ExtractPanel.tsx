@@ -16,24 +16,6 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-// shrink a data URL to a smaller JPEG for fast segmentation — detection doesn't
-// need full resolution, and a big base64 upload is what makes it slow. Boxes/masks
-// come back normalised (0–1000) so they still map onto the full-size preview.
-async function downscale(dataUrl: string, max = 720): Promise<string> {
-  try {
-    const im = await loadImage(dataUrl);
-    const w0 = im.naturalWidth || im.width, h0 = im.naturalHeight || im.height;
-    const s = Math.min(1, max / Math.max(w0, h0));
-    if (s >= 1) return dataUrl;
-    const c = document.createElement('canvas');
-    c.width = Math.round(w0 * s); c.height = Math.round(h0 * s);
-    c.getContext('2d')!.drawImage(im, 0, 0, c.width, c.height);
-    return c.toDataURL('image/jpeg', 0.85);
-  } catch {
-    return dataUrl;
-  }
-}
-
 // turn a grayscale mask into a mint-tinted RGBA canvas (alpha = mask luminance)
 async function makeHighlight(maskUrl: string): Promise<HTMLCanvasElement> {
   const im = await loadImage(maskUrl);
@@ -86,9 +68,8 @@ export default function ExtractPanel({
     setDetecting(true); setStatus('detecting garments…');
     (async () => {
       try {
-        const small = await downscale(image);
         const r = await fetch('/api/segment', {
-          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ image: small }),
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ image }),
         });
         const j = await r.json();
         if (cancelled) return;
