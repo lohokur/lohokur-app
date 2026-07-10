@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { falEdit } from '@/lib/fal';
 import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 
-// Gemini image generation can take a while (~30–90s).
+// Image generation can take a while (~30–90s).
 export const maxDuration = 300;
-
-function toPart(dataUrl: string) {
-  const m = /^data:(.+?);base64,([\s\S]*)$/.exec(dataUrl);
-  if (!m) throw new Error('expected a base64 data URL');
-  return { inlineData: { mimeType: m[1], data: m[2] } };
-}
 
 const FRAMING =
   'Reproduce the identical camera framing, crop, zoom, distance and ASPECT RATIO of the base photo: a FULL-LENGTH PORTRAIT with the ENTIRE figure visible from the top of the head down to the FEET on the floor, standing in the full room, same tall vertical proportions. Do NOT zoom in, crop to the upper body, or switch to a landscape/close-up composition.';
@@ -51,10 +45,6 @@ export async function POST(req: Request) {
   if (!sketch || !base) {
     return NextResponse.json({ error: 'missing sketch or base image' }, { status: 400 });
   }
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 500 });
-  }
   const gate = await consumeGeneration();
   if (!gate.ok) {
     return NextResponse.json(
@@ -63,21 +53,9 @@ export async function POST(req: Request) {
     );
   }
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const model = process.env.GEMINI_MODEL || 'gemini-3-pro-image';
-    const contents = [{ text: promptFor(view || 'front') }, toPart(base), toPart(sketch)];
-    const res = await ai.models.generateContent({ model, contents });
-    const parts = res?.candidates?.[0]?.content?.parts || [];
-    for (const p of parts) {
-      if (p.inlineData?.data) {
-        return NextResponse.json({
-          image: `data:${p.inlineData.mimeType || 'image/png'};base64,${p.inlineData.data}`,
-        });
-      }
-    }
-    const text = parts.map((p) => p.text).filter(Boolean).join(' ');
-    await refundGeneration();
-    return NextResponse.json({ error: 'model returned no image', detail: text.slice(0, 300) }, { status: 502 });
+    // base first, then the garment sketch — matches promptFor()'s FIRST/SECOND image wording.
+    const image = await falEdit(promptFor(view || 'front'), [base, sketch]);
+    return NextResponse.json({ image });
   } catch (e) {
     await refundGeneration();
     return NextResponse.json({ error: (e as Error).message || 'generation failed' }, { status: 500 });

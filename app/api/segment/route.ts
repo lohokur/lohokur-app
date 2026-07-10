@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { getGenAI } from '@/lib/genai';
 
 export const maxDuration = 120;
 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 500 });
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = getGenAI();
     const model = process.env.GEMINI_SEG_MODEL || 'gemini-2.5-flash';
     const res = await ai.models.generateContent({
       model,

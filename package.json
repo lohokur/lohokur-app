@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.10.1",
     "@freesewing/aaron": "^4.10.0",
     "@freesewing/brian": "^4.10.0",
     "@freesewing/config": "^4.10.0",
