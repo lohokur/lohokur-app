@@ -75,12 +75,14 @@ export async function saveProject(
 ): Promise<Project | null> {
   if (HAS_DB) {
     const sb = supabaseBrowser();
-    const { data } = await sb
+    const { data, error } = await sb
       .from('projects')
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select('*')
       .maybeSingle();
+    // Surface failures so autosave can retry instead of silently dropping the change.
+    if (error) throw new Error(error.message);
     return data ? rowToProject(data) : null;
   }
   const list = lread();

@@ -128,6 +128,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [editingSample, setEditingSample] = useState<string | null>(null);
   const dirty = useRef(false);
   const loaded = useRef(false);
+  const loadedNonEmpty = useRef(false); // did the project load with nodes? guards empty-clobber
+  const saving = useRef(false); // a save is in flight — don't overlap
   const [booting, setBooting] = useState(true);
   const [dataProg, setDataProg] = useState(0.08); // real data-load progress, 0.08 → 0.9
   const [canvasReady, setCanvasReady] = useState(false); // ReactFlow onInit fired
@@ -189,7 +191,11 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           })));
         }
       }
-      if (!cancelled) { setDataProg(0.9); loaded.current = true; }
+      if (!cancelled) {
+        setDataProg(0.9);
+        loadedNonEmpty.current = ((p?.flow?.nodes as Node[] | undefined)?.length ?? 0) > 0;
+        loaded.current = true;
+      }
     });
     // safety net: never let the loader hang if an image or onInit never resolves
     const bail = setTimeout(() => { if (!cancelled) { setDataProg(0.9); setCanvasReady(true); } }, 6000);
@@ -225,7 +231,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       }
       const base = await urlToDataUrl('/base.jpg');
       const out: Partial<Record<View, string>> = {};
-      setNodeData(id, { loading: true, note: undefined, views: {}, image: undefined });
+      // keep the existing image/views on screen while regenerating — a failed or
+      // interrupted re-render must NOT wipe the media that's already saved
+      setNodeData(id, { loading: true, note: undefined });
       for (let i = 0; i < present.length; i++) {
         const view = present[i];
         setNodeData(id, { loading: true, note: `rendering ${view}… (${i + 1}/${present.length})` });
@@ -661,19 +669,49 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   }, [copyNodes, duplicateNodes, pasteNodes, setNodes, groupNodes, ungroup]);
 
   const save = useCallback(async () => {
-    if (!loaded.current) return;
-    await saveProject(projectId, { flow: { nodes, edges } });
+    if (!loaded.current || !dirty.current || saving.current) return;
+    // Safety net: never overwrite a project that had content with an empty canvas.
+    // Guards against a load race or transient state emptying the flow and wiping media.
+    if (nodes.length === 0 && loadedNonEmpty.current) return;
+    saving.current = true;
+    // clear dirty BEFORE the await; re-set it on failure so nothing is lost
     dirty.current = false;
+    try {
+      await saveProject(projectId, { flow: { nodes, edges } });
+      if (nodes.length > 0) loadedNonEmpty.current = true;
+    } catch (e) {
+      dirty.current = true; // failed — keep dirty so it retries
+      console.error('[autosave] save failed, will retry', e);
+    } finally {
+      saving.current = false;
+      // edits landed during the write (or it failed) → retry so nothing is dropped
+      if (dirty.current) setTimeout(() => void saveRef.current(), 600);
+    }
   }, [projectId, nodes, edges]);
+
+  // keep a ref to the latest save so leave-handlers can flush without re-subscribing
+  const saveRef = useRef(save);
+  saveRef.current = save;
 
   useEffect(() => {
     if (!loaded.current) return;
     dirty.current = true;
-    const t = setTimeout(() => {
-      if (dirty.current) save();
-    }, 1200);
+    const t = setTimeout(() => { void save(); }, 1200);
     return () => clearTimeout(t);
   }, [nodes, edges, save]);
+
+  // flush pending changes when leaving the page/canvas so nothing in the debounce
+  // window (e.g. a just-generated image) is lost on reload / navigation / close.
+  useEffect(() => {
+    const flush = () => { if (loaded.current && dirty.current) void saveRef.current(); };
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('visibilitychange', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('visibilitychange', flush);
+      flush(); // component unmount (e.g. navigating to another project) → flush
+    };
+  }, []);
 
   // record a history snapshot when the flow settles (skip the change caused by undo/redo itself)
   useEffect(() => {
