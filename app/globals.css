@@ -920,27 +920,25 @@ body {
 /* ---------- sticky note node ---------- */
 .note-node {
   display: flex; flex-direction: column;
-  min-width: 150px; min-height: 120px;
+  min-width: 160px; min-height: 120px;
   background: #f7e26b; color: #23200f;
   border-radius: 3px; padding: 0; overflow: hidden;
   box-shadow: 0 10px 26px -10px rgba(0,0,0,.6), 0 2px 0 rgba(0,0,0,.12);
   transform: rotate(-1deg);
+  cursor: grab;
 }
+.note-node:active { cursor: grabbing; }
+.note-node.editing { cursor: default; }
 .note-node.selected { outline: 2px solid var(--mint); outline-offset: 2px; }
-/* top grip = the drag surface (textarea below is nodrag so you can type) */
-.note-grip {
-  display: flex; align-items: center; justify-content: center; gap: 3px;
-  height: 16px; flex: 0 0 auto; cursor: grab;
-  background: rgba(0,0,0,.07); border-bottom: 1px solid rgba(0,0,0,.08);
-}
-.note-grip:active { cursor: grabbing; }
-.note-grip span { width: 3px; height: 3px; border-radius: 50%; background: rgba(35,32,15,.35); }
 .note-ta {
-  flex: 1 1 auto; width: 100%; min-width: 150px; min-height: 96px;
-  box-sizing: border-box; padding: 10px 12px;
-  background: transparent; border: none; outline: none; resize: both;
+  flex: 1 1 auto; width: 100%; min-width: 160px; min-height: 108px;
+  box-sizing: border-box; padding: 11px 13px;
+  background: transparent; border: none; outline: none;
   color: #23200f; font-family: var(--sans); font-size: 13px; line-height: 1.45;
-  overflow: hidden;
+  overflow: hidden; resize: none;
+  pointer-events: none; cursor: inherit;   /* drags pass to the note; click enters edit mode */
 }
+/* editing: the textarea takes over — type, select, and resize from the corner */
+.note-node.editing .note-ta { pointer-events: auto; cursor: text; resize: both; }
 .note-ta::placeholder { color: rgba(35,32,15,.4); }
 .note-ta::-webkit-resizer { background: transparent; }

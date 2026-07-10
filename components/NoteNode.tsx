@@ -1,27 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 
-// A sticky note on the canvas — free-form text, no pipeline handles. The top grip
-// is the drag surface (the textarea is `nodrag` so you can type in it). Resizable
-// via the corner. Persists into the flow.
+// Sticky note. The WHOLE note is draggable (React Flow suppresses the click that
+// would normally focus a textarea, so we can't type while it's drag-armed). A
+// single click flips it into edit mode and focuses the text; blur leaves edit
+// mode so it's draggable again. No pipeline handles.
 export default function NoteNode({ id, data, selected }: NodeProps) {
   const { setNoteText } = useStudio();
   const d = data as { text?: string };
   const [text, setText] = useState(d.text ?? '');
+  const [editing, setEditing] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      const el = ref.current;
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    }
+  }, [editing]);
 
   return (
-    <div className={`note-node${selected ? ' selected' : ''}`}>
-      <div className="note-grip" title="Drag to move">
-        <span /><span /><span />
-      </div>
+    <div
+      className={`note-node${selected ? ' selected' : ''}${editing ? ' editing' : ''}`}
+      onClick={() => { if (!editing) setEditing(true); }}
+    >
       <textarea
-        className="note-ta nodrag nowheel"
+        ref={ref}
+        className={`note-ta${editing ? ' nodrag nowheel' : ''}`}
         value={text}
+        readOnly={!editing}
         onChange={(e) => { setText(e.target.value); setNoteText(id, e.target.value); }}
-        placeholder="write a note…"
+        onBlur={() => setEditing(false)}
+        placeholder="click to write a note…"
         spellCheck={false}
       />
     </div>
