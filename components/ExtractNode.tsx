@@ -16,7 +16,7 @@ export default function ExtractNode({ id, data, selected }: NodeProps) {
         </button>
       </div>
       <div className="sn-draw">
-        {image ? <img src={image} alt="Extracted" draggable={false} /> : <span className="sn-empty">open · hover a piece · click to lift</span>}
+        {image ? <img src={image} alt="Extracted" draggable={false} /> : <span className="sn-empty">open · hover a garment · click to extract</span>}
       </div>
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>
