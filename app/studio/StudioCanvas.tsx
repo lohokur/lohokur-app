@@ -262,7 +262,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       let last: string | undefined;
       for (let i = 0; i < targets.length; i++) {
         const t = targets[i];
-        setNodeData(id, { loading: true, note: targets.length > 1 ? `rendering ${i + 1}/${targets.length}…` : 'rendering…', preview: t.id });
+        // mark only THIS input as busy — the rest of the node stays viewable
+        setNodeData(id, { busy: t.id, note: undefined });
         try {
           const r = await fetch('/api/visualise', {
             method: 'POST',
@@ -273,16 +274,16 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           if (j.image) {
             byInput[t.id] = j.image;
             last = j.image;
-            setNodeData(id, { byInput: { ...byInput }, image: j.image, preview: t.id, loading: true });
+            setNodeData(id, { byInput: { ...byInput }, image: j.image, busy: t.id });
           } else if (targets.length === 1) {
-            setNodeData(id, { loading: false, note: j.error || 'render failed' });
+            setNodeData(id, { busy: undefined, note: j.error || 'render failed' });
             return;
           }
         } catch {
-          if (targets.length === 1) { setNodeData(id, { loading: false, note: 'render failed' }); return; }
+          if (targets.length === 1) { setNodeData(id, { busy: undefined, note: 'render failed' }); return; }
         }
       }
-      setNodeData(id, { byInput, image: last ?? byInput[inputs[0].id], loading: false, note: undefined });
+      setNodeData(id, { byInput, image: last ?? byInput[inputs[0].id], busy: undefined, note: undefined });
     },
     [setNodeData]
   );

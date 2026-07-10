@@ -972,3 +972,15 @@ body {
   background: var(--mint); box-shadow: 0 0 0 1.5px rgba(0,0,0,.5); }
 .vis-done-dot { position: absolute; bottom: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%;
   background: #fff; box-shadow: 0 0 0 1.5px rgba(0,0,0,.5); }
+
+/* visualise: per-card rendering state (only the card being redone shows busy) */
+.sn-draw { position: relative; }
+.vis-rendering { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  font-family: var(--mono); font-size: 10px; letter-spacing: .05em; color: var(--ink);
+  background: var(--mint); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.vis-in-card.rendering { border-color: var(--mint); }
+.vis-in-card.rendering img { opacity: .4; }
+.vis-spin { position: absolute; top: 50%; left: 50%; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px;
+  border: 2px solid rgba(255,255,255,.35); border-top-color: var(--mint); border-radius: 50%;
+  animation: vis-spin .7s linear infinite; }
+@keyframes vis-spin { to { transform: rotate(360deg); } }

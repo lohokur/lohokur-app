@@ -9,7 +9,7 @@ type Data = {
   byInput?: Record<string, string>;   // input node-id → its visualised result (never dropped on switch)
   order?: string[];                   // input node-ids, first = primary (shown + processed)
   preview?: string;                   // which input is focused in the big card (defaults to primary)
-  loading?: boolean;
+  busy?: string;                      // the input node-id currently rendering (only that card is busy)
   note?: string;
 };
 
@@ -61,20 +61,19 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
         <button
           className="sn-edit nodrag"
           onClick={(e) => { e.stopPropagation(); visualise(id); }}
-          disabled={d.loading || !inputs.length}
+          disabled={!!d.busy || !inputs.length}
         >
-          {d.loading ? '…' : (d.preview && ids.includes(d.preview)) ? 'redo' : Object.keys(byInput).length ? 'visualise' : 'run'}
+          {d.busy ? '…' : (d.preview && ids.includes(d.preview)) ? 'redo' : Object.keys(byInput).length ? 'visualise' : 'run'}
         </button>
       </div>
 
       <div className="sn-draw">
-        {d.loading ? (
-          <span className="sn-empty pulse">{d.note ?? 'rendering…'}</span>
-        ) : card ? (
+        {card ? (
           <img src={card} alt="Visualised" draggable={false} />
         ) : (
           <span className="sn-empty">{d.note ?? 'plug in a sketch + image → run'}</span>
         )}
+        {d.busy === focusedId && <span className="vis-rendering">rendering…</span>}
       </div>
 
       {/* plugged-in inputs as cards — drag to reorder (first = primary/processed);
@@ -85,7 +84,7 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
             <button
               key={inp.id}
               draggable
-              className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${d.preview === inp.id ? ' focus' : ''}${dragId === inp.id ? ' dragging' : ''}`}
+              className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${d.preview === inp.id ? ' focus' : ''}${dragId === inp.id ? ' dragging' : ''}${d.busy === inp.id ? ' rendering' : ''}`}
               title={`${inp.kind}${byInput[inp.id] ? ' · visualised' : ''} · click to select (then Visualise redoes just this) · drag to reorder`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -100,6 +99,7 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
               <img src={byInput[inp.id] ?? inp.thumb} alt="" draggable={false} />
               {i === 0 && <span className="vis-primary-dot" />}
               {byInput[inp.id] && <span className="vis-done-dot" />}
+              {d.busy === inp.id && <span className="vis-spin" />}
             </button>
           ))}
         </div>
