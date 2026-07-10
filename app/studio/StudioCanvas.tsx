@@ -26,6 +26,7 @@ import ExtractNode from '@/components/ExtractNode';
 import StudioNode from '@/components/StudioNode';
 import ImageNode from '@/components/ImageNode';
 import GroupNode from '@/components/GroupNode';
+import NoteNode from '@/components/NoteNode';
 import WireEdge from '@/components/WireEdge';
 import CanvasMenu, { type MenuState, type MenuItem } from '@/components/CanvasMenu';
 import DotField from '@/components/DotField';
@@ -61,6 +62,7 @@ const nodeTypes = {
   sample: SampleNode,
   manufacture: ManufactureNode,
   group: GroupNode,
+  note: NoteNode,
 };
 const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', studio: 'studio', image: 'image', extract: 'extract', pattern: 'pattern', techpack: 'techpack', sample: 'sample', manufacture: 'manufacture' };
 const edgeTypes = { wire: WireEdge };
@@ -310,6 +312,23 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     [setNodes, stageLocked, router]
   );
 
+  // drop a sticky note at the centre of the current view (not a pipeline stage — no gating)
+  const addNote = useCallback(() => {
+    const id = `note-${Date.now().toString(36)}-${counter++}`;
+    const center = rf.current?.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    const position = center ? { x: center.x - 110, y: center.y - 70 } : { x: 160, y: 120 };
+    setNodes((ns) => [
+      ...ns.map((n) => (n.selected ? { ...n, selected: false } : n)),
+      { id, type: 'note', position, data: { text: '' }, selected: true, className: 'spawn-flash' },
+    ]);
+    setTimeout(() => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, className: undefined } : n))), 1100);
+  }, [setNodes]);
+
+  const setNoteText = useCallback(
+    (id: string, text: string) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, text } } : n))),
+    [setNodes],
+  );
+
   // single-key shortcuts spawn nodes — ignored while typing or an editor/panel is open
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -317,14 +336,16 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
       if (editing || editingTechpack || editingExtract || editingPattern || editingManufacture || editingSample || settingsOpen || libraryOpen) return;
-      const type = STAGE_HOTKEYS[e.key.toLowerCase()];
+      const k = e.key.toLowerCase();
+      if (k === 'n') { e.preventDefault(); addNote(); return; }
+      const type = STAGE_HOTKEYS[k];
       if (!type) return;
       e.preventDefault();
       addNode(type);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [addNode, editing, editingTechpack, editingExtract, editingPattern, editingManufacture, editingSample, settingsOpen, libraryOpen]);
+  }, [addNode, addNote, editing, editingTechpack, editingExtract, editingPattern, editingManufacture, editingSample, settingsOpen, libraryOpen]);
 
   // drop an image straight onto the canvas (paste / upload) as a ready Image node
   const addImageNode = useCallback((image: string) => {
@@ -822,7 +843,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   }
 
   return (
-    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, openExtract, openPattern, openManufacture, openSample, setNodeImage, promptImage, renameGroup }}>
+    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, openExtract, openPattern, openManufacture, openSample, setNodeImage, promptImage, renameGroup, setNoteText }}>
       <div className={`studio${booting || project === undefined ? ' emerging' : ''}`}>
         <DotField viewportRef={viewportRef} />
         <ReactFlow
@@ -882,7 +903,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           </Panel>
 
           <Panel position="center-left">
-            <StudioDock stages={STAGES} onAdd={addNode} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={() => router.push('/profile')} isLocked={stageLocked} onLocked={() => router.push('/pricing')} />
+            <StudioDock stages={STAGES} onAdd={addNode} onNote={addNote} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={() => router.push('/profile')} isLocked={stageLocked} onLocked={() => router.push('/pricing')} />
           </Panel>
         </ReactFlow>
 

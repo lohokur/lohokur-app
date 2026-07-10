@@ -63,9 +63,10 @@ const ICONS: Record<StageKey, ReactNode> = {
   ), // truck
 };
 
-export default function StudioDock({ stages, onAdd, onLibrary, onProfile, isLocked, onLocked }: {
+export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile, isLocked, onLocked }: {
   stages: Stage[];
   onAdd: (k: StageKey) => void;
+  onNote: () => void;
   onLibrary: () => void;
   onProfile: () => void;
   isLocked?: (k: StageKey) => boolean;
@@ -95,6 +96,11 @@ export default function StudioDock({ stages, onAdd, onLibrary, onProfile, isLock
       })}
 
       <div className="dock-div" />
+
+      <button className="dock-btn" onClick={onNote} aria-label="Add sticky note" title="Sticky note  ·  N">
+        <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v11l-5 5H4z" /><path d="M20 15h-5v5" /><path d="M8 9h8M8 13h5" /></svg>
+        <span className="dock-label">Note<kbd className="dock-key">N</kbd></span>
+      </button>
 
       <button className="dock-btn dock-lib" onClick={onLibrary} aria-label="Canvas library" title="Canvas library — everything made here">
         <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>

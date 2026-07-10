@@ -13,6 +13,7 @@ export type StudioCtx = {
   setNodeImage: (id: string, image: string) => void;
   promptImage: (id: string, prompt: string) => void;
   renameGroup: (id: string, label: string) => void;
+  setNoteText: (id: string, text: string) => void;
 };
 
 export const StudioContext = createContext<StudioCtx>({
@@ -26,5 +27,6 @@ export const StudioContext = createContext<StudioCtx>({
   setNodeImage: () => {},
   promptImage: () => {},
   renameGroup: () => {},
+  setNoteText: () => {},
 });
 export const useStudio = () => useContext(StudioContext);

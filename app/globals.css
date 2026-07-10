@@ -914,3 +914,22 @@ body {
 .dock-key { margin-left: 7px; font-family: var(--mono); font-size: 9.5px; line-height: 1;
   padding: 2px 5px; border-radius: 4px; color: var(--muted);
   background: rgba(255,255,255,.06); border: 1px solid var(--glass-line); }
+
+/* ---------- sticky note node ---------- */
+.note-node {
+  min-width: 150px; min-height: 110px;
+  background: #f7e26b; color: #23200f;
+  border-radius: 3px; padding: 0;
+  box-shadow: 0 10px 26px -10px rgba(0,0,0,.6), 0 2px 0 rgba(0,0,0,.12);
+  transform: rotate(-1deg);
+}
+.note-node.selected { outline: 2px solid var(--mint); outline-offset: 2px; }
+.note-ta {
+  width: 100%; height: 100%; min-width: 150px; min-height: 110px;
+  box-sizing: border-box; padding: 12px 13px;
+  background: transparent; border: none; outline: none; resize: both;
+  color: #23200f; font-family: var(--sans); font-size: 13px; line-height: 1.45;
+  overflow: hidden;
+}
+.note-ta::placeholder { color: rgba(35,32,15,.4); }
+.note-ta::-webkit-resizer { background: transparent; }
