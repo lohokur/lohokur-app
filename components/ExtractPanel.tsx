@@ -63,17 +63,6 @@ function edgeCanvas(data: Uint8Array, width: number, height: number): HTMLCanvas
   return c;
 }
 
-// blurred + darkened copy of the look, at the overlay's pixel size
-function blurBg(img: HTMLImageElement, w: number, h: number): HTMLCanvasElement {
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const ctx = c.getContext('2d')!;
-  ctx.filter = 'blur(7px) brightness(0.4) saturate(0.85)';
-  ctx.drawImage(img, 0, 0, w, h);
-  ctx.filter = 'none';
-  ctx.fillStyle = 'rgba(6,7,8,0.25)'; ctx.fillRect(0, 0, w, h);
-  return c;
-}
-
 export default function ExtractPanel({
   open,
   image,
@@ -89,7 +78,6 @@ export default function ExtractPanel({
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const pieces = useRef<Piece[]>([]);
   const labelMap = useRef<{ map: Uint8Array; w: number; h: number } | null>(null);
-  const blurRef = useRef<{ cv: HTMLCanvasElement; w: number; h: number } | null>(null);
   const fxRef = useRef<HTMLCanvasElement | null>(null);
   const [count, setCount] = useState(0);
   const [hover, setHover] = useState(-1);
@@ -102,14 +90,13 @@ export default function ExtractPanel({
     if (!img || !ov) return;
     ov.width = img.clientWidth;
     ov.height = img.clientHeight;
-    blurRef.current = null; // rebuild the blur at the new size
   }, []);
 
   // detect garments in-browser whenever the panel opens with an image
   useEffect(() => {
     if (!open || !image) return;
     let cancelled = false;
-    pieces.current = []; labelMap.current = null; blurRef.current = null; setCount(0); setHover(-1);
+    pieces.current = []; labelMap.current = null; setCount(0); setHover(-1);
     setPhase('loading'); setLoadPct(0); setStatus('preparing detector…');
     (async () => {
       try {
@@ -186,15 +173,11 @@ export default function ExtractPanel({
         ctx.clearRect(0, 0, ov.width, ov.height);
         const p = pieces.current[hover];
         if (p && phase === 'ready') {
-          // blurred + darkened background (cached per overlay size)
-          let bg = blurRef.current;
-          if (!bg || bg.w !== ov.width || bg.h !== ov.height) {
-            bg = { cv: blurBg(img, ov.width, ov.height), w: ov.width, h: ov.height };
-            blurRef.current = bg;
-          }
-          ctx.drawImage(bg.cv, 0, 0);
-          // punch the garment back to sharp (reveal the untouched <img> underneath)
-          ctx.save(); ctx.globalCompositeOperation = 'destination-out';
+          // a whisper of dim on everything but the hovered garment (no blur — subtle)
+          ctx.save();
+          ctx.fillStyle = 'rgba(6,7,8,0.18)';
+          ctx.fillRect(0, 0, ov.width, ov.height);
+          ctx.globalCompositeOperation = 'destination-out';
           ctx.drawImage(p.mask, 0, 0, ov.width, ov.height);
           ctx.restore();
 
