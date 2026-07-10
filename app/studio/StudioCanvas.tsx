@@ -46,6 +46,7 @@ import type { Techpack } from '@/lib/techpack';
 import type { ChosenManufacturer } from '@/lib/manufacturers';
 import type { Sample } from '@/lib/sample';
 import { getProject, saveProject, createProject } from '@/lib/client-store';
+import { useMe } from '@/lib/use-billing';
 import type { Project } from '@/lib/types';
 
 const nodeTypes = {
@@ -131,6 +132,11 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const rf = useRef<ReactFlowInstance | null>(null); // React Flow instance (for viewport math)
   const viewportRef = useRef({ x: 0, y: 0, zoom: 1 }); // live React Flow viewport for the dot field
   const router = useRouter();
+  const me = useMe();
+  const stageLocked = useCallback(
+    (k: StageKey) => (me ? !me.entitlements.stages.includes(k) : false),
+    [me],
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [menu, setMenu] = useState<MenuState>(null); // right-click context menu
@@ -286,6 +292,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   const addNode = useCallback(
     (type: StageKey) => {
+      if (stageLocked(type)) { router.push('/pricing'); return; } // gate premium stages
       const id = `${type}-${Date.now().toString(36)}-${counter++}`;
       const nt = CUSTOM[type] ?? 'stage';
       // spawn at the centre of what the user is currently looking at, so it's always in view
@@ -300,7 +307,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       setTimeout(() => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, className: undefined } : n))), 1100);
       if (type === 'sketch') setEditing(id); // drop it on the canvas AND open the pad
     },
-    [setNodes]
+    [setNodes, stageLocked, router]
   );
 
   // drop an image straight onto the canvas (paste / upload) as a ready Image node
@@ -859,7 +866,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           </Panel>
 
           <Panel position="center-left">
-            <StudioDock stages={STAGES} onAdd={addNode} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={() => router.push('/profile')} />
+            <StudioDock stages={STAGES} onAdd={addNode} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={() => router.push('/profile')} isLocked={stageLocked} onLocked={() => router.push('/pricing')} />
           </Panel>
         </ReactFlow>
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 
 // Gemini image generation can take a while (~30–90s).
 export const maxDuration = 300;
@@ -22,6 +23,14 @@ export async function POST(req: Request) {
   if (!apiKey) {
     return NextResponse.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 500 });
   }
+  // meter this generation against the user's monthly tier allowance
+  const gate = await consumeGeneration();
+  if (!gate.ok) {
+    return NextResponse.json(
+      { error: gate.reason === 'unauth' ? 'sign in required' : 'monthly generation limit reached', upgrade: gate.reason === 'over' },
+      { status: gate.reason === 'unauth' ? 401 : 402 },
+    );
+  }
   try {
     const ai = new GoogleGenAI({ apiKey });
     const model = process.env.GEMINI_MODEL || 'gemini-3-pro-image';
@@ -43,8 +52,10 @@ export async function POST(req: Request) {
       }
     }
     const text = out.map((p) => p.text).filter(Boolean).join(' ');
+    await refundGeneration(); // no image produced — don't charge for it
     return NextResponse.json({ error: 'model returned no image', detail: text.slice(0, 300) }, { status: 502 });
   } catch (e) {
+    await refundGeneration(); // generation failed — refund the credit
     let msg = (e as Error).message || 'generation failed';
     try { const p = JSON.parse(msg); msg = p?.error?.message || msg; } catch { /* not JSON */ }
     return NextResponse.json({ error: msg }, { status: 500 });

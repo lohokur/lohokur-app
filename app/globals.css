@@ -856,3 +856,56 @@ body {
   background: rgba(0, 0, 0, 0.35); border: 1px solid var(--glass-line);
   border-radius: 6px; padding: 2px 7px; color: var(--fg); outline: none;
 }
+
+/* ---------- pricing + billing ---------- */
+.ghost-link { color: var(--muted); font-family: var(--mono); font-size: 12px; text-decoration: none; }
+.ghost-link:hover { color: var(--fg); }
+
+.cadence-toggle { display: inline-flex; gap: 4px; padding: 4px; margin: 8px 0 24px;
+  background: var(--glass); border: 1px solid var(--glass-line); border-radius: 12px; }
+.cadence-toggle button { background: none; border: none; color: var(--muted); cursor: pointer;
+  font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 7px 16px; border-radius: 8px; }
+.cadence-toggle button.on { background: var(--fg); color: var(--ink); }
+.save-pill { font-family: var(--mono); font-size: 9.5px; letter-spacing: .04em; color: var(--mint);
+  border: 1px solid var(--glass-line); border-radius: 5px; padding: 1px 5px; margin-left: 6px; }
+.cadence-toggle button.on .save-pill { color: var(--ink); border-color: rgba(0,0,0,.25); }
+
+.pricing-err { color: #ff6b6b; font-size: 13px; margin: 4px 0 12px; }
+
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px; margin-top: 8px; max-width: 860px; }
+.plan-card { position: relative; display: flex; flex-direction: column; gap: 14px;
+  background: var(--glass); border: 1px solid var(--glass-line); border-radius: 16px; padding: 24px 22px; }
+.plan-card.featured { border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint), 0 18px 44px -20px var(--mint); }
+.plan-badge { position: absolute; top: -10px; left: 22px; background: var(--mint); color: var(--ink);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 6px; font-weight: 700; }
+.plan-name { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: .01em; }
+.plan-price { font-size: 34px; font-weight: 300; letter-spacing: -.02em; }
+.plan-per { font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+.plan-features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.plan-features li { color: var(--muted); font-size: 13px; padding-left: 20px; position: relative; }
+.plan-features li::before { content: '✓'; position: absolute; left: 0; color: var(--mint); }
+.plan-cta { display: inline-block; text-align: center; text-decoration: none; cursor: pointer;
+  background: var(--mint); color: var(--ink); border: none; border-radius: 10px;
+  padding: 11px 16px; font-weight: 600; font-size: 13px; font-family: var(--sans); }
+.plan-cta:hover:not(:disabled) { background: #c4f5da; }
+.plan-cta.ghost { background: transparent; color: var(--fg); border: 1px solid var(--glass-line); }
+.plan-cta.current, .plan-cta:disabled { background: var(--glass); color: var(--muted); cursor: default; }
+
+.billing-card { max-width: 560px; background: var(--glass); border: 1px solid var(--glass-line);
+  border-radius: 16px; padding: 22px 24px; margin-top: 18px; display: flex; flex-direction: column; gap: 20px; }
+.billing-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.billing-label { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.billing-plan { font-size: 26px; font-weight: 300; letter-spacing: -.01em; margin-top: 2px; }
+.billing-status { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.billing-usage { display: flex; flex-direction: column; gap: 8px; }
+.usage-bar { height: 7px; border-radius: 4px; background: rgba(255,255,255,.09); overflow: hidden; }
+.usage-fill { height: 100%; background: var(--mint); border-radius: 4px; transition: width .3s ease; }
+
+/* dock: locked (upgrade-gated) stage buttons */
+.dock-btn.locked { opacity: .55; }
+.dock-btn.locked .dock-ic { opacity: .6; }
+.dock-lock { position: absolute; right: 5px; top: 5px; width: 12px; height: 12px;
+  fill: none; stroke: var(--mint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dock-btn { position: relative; }

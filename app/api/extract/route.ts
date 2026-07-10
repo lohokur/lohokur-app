@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 
 export const maxDuration = 300;
 
@@ -21,6 +22,13 @@ export async function POST(req: Request) {
     'Remove the person/figure, all the other garments, and the background — nothing but this one piece.',
     'Keep its exact shape, panels, colour and material. Photorealistic, sharp, high detail, product-catalogue style. Square framing.',
   ].join(' ');
+  const gate = await consumeGeneration();
+  if (!gate.ok) {
+    return NextResponse.json(
+      { error: gate.reason === 'unauth' ? 'sign in required' : 'monthly generation limit reached', upgrade: gate.reason === 'over' },
+      { status: gate.reason === 'unauth' ? 401 : 402 },
+    );
+  }
   try {
     const ai = new GoogleGenAI({ apiKey });
     const model = process.env.GEMINI_MODEL || 'gemini-3-pro-image';
@@ -31,8 +39,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ image: `data:${p.inlineData.mimeType || 'image/png'};base64,${p.inlineData.data}` });
       }
     }
+    await refundGeneration();
     return NextResponse.json({ error: 'model returned no image' }, { status: 502 });
   } catch (e) {
+    await refundGeneration();
     return NextResponse.json({ error: (e as Error).message || 'extraction failed' }, { status: 500 });
   }
 }

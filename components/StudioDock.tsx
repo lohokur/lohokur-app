@@ -63,15 +63,36 @@ const ICONS: Record<StageKey, ReactNode> = {
   ), // truck
 };
 
-export default function StudioDock({ stages, onAdd, onLibrary, onProfile }: { stages: Stage[]; onAdd: (k: StageKey) => void; onLibrary: () => void; onProfile: () => void }) {
+export default function StudioDock({ stages, onAdd, onLibrary, onProfile, isLocked, onLocked }: {
+  stages: Stage[];
+  onAdd: (k: StageKey) => void;
+  onLibrary: () => void;
+  onProfile: () => void;
+  isLocked?: (k: StageKey) => boolean;
+  onLocked?: (k: StageKey) => void;
+}) {
   return (
     <div className="dock" role="toolbar" aria-label="Add nodes">
-      {stages.map((s) => (
-        <button key={s.key} className="dock-btn" onClick={() => onAdd(s.key)} aria-label={s.label} title={s.hint}>
-          <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true">{ICONS[s.key]}</svg>
-          <span className="dock-label">{s.label}</span>
-        </button>
-      ))}
+      {stages.map((s) => {
+        const locked = isLocked?.(s.key) ?? false;
+        return (
+          <button
+            key={s.key}
+            className={`dock-btn${locked ? ' locked' : ''}`}
+            onClick={() => (locked ? onLocked?.(s.key) : onAdd(s.key))}
+            aria-label={locked ? `${s.label} (upgrade to unlock)` : s.label}
+            title={locked ? `${s.label} — upgrade to unlock` : s.hint}
+          >
+            <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true">{ICONS[s.key]}</svg>
+            <span className="dock-label">{s.label}</span>
+            {locked && (
+              <svg className="dock-lock" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+              </svg>
+            )}
+          </button>
+        );
+      })}
 
       <div className="dock-div" />
 

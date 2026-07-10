@@ -86,8 +86,14 @@ export default function Home() {
   useEffect(() => { queryRef.current = query.trim().toLowerCase(); }, [query]);
 
   async function newProject() {
-    const p = await createProject('Untitled');
-    router.push(`/studio/${p.id}`);
+    try {
+      const p = await createProject('Untitled');
+      router.push(`/studio/${p.id}`);
+    } catch (e) {
+      // project-count cap hit (enforced by the DB trigger) → send them to upgrade
+      if (/project_limit|limit reached|upgrade/i.test((e as Error).message)) router.push('/pricing');
+      else throw e;
+    }
   }
 
   const slots: Slot[] = useMemo(() => {
