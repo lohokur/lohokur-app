@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 
-// A sticky note on the canvas — free-form text, no pipeline handles. Resizable
-// via the corner grip (CSS resize on the textarea). Persists into the flow.
+// A sticky note on the canvas — free-form text, no pipeline handles. The top grip
+// is the drag surface (the textarea is `nodrag` so you can type in it). Resizable
+// via the corner. Persists into the flow.
 export default function NoteNode({ id, data, selected }: NodeProps) {
   const { setNoteText } = useStudio();
   const d = data as { text?: string };
@@ -13,6 +14,9 @@ export default function NoteNode({ id, data, selected }: NodeProps) {
 
   return (
     <div className={`note-node${selected ? ' selected' : ''}`}>
+      <div className="note-grip" title="Drag to move">
+        <span /><span /><span />
+      </div>
       <textarea
         className="note-ta nodrag nowheel"
         value={text}

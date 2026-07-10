@@ -305,19 +305,36 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       if (stageLocked(type)) { router.push('/pricing'); return; } // gate premium stages
       const id = `${type}-${Date.now().toString(36)}-${counter++}`;
       const nt = CUSTOM[type] ?? 'stage';
-      // spawn at the centre of what the user is currently looking at, so it's always in view
-      const inst = rf.current;
-      const center = inst?.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-      const position = center ? { x: center.x - 190, y: center.y - 70 } : { x: 160, y: 120 };
+
+      // auto-attach: if exactly one node is selected and the new node can legally
+      // follow it (per the pipeline rules), wire into it and drop it just to the right.
+      const sel = nodesRef.current.filter((n) => n.selected);
+      const anchor = sel.length === 1 ? sel[0] : undefined;
+      const anchorType = anchor ? (anchor.data as { type?: StageKey } | undefined)?.type : undefined;
+      const attach = !!anchor && !!anchorType && !!NEXT[anchorType]?.includes(type);
+
+      let position: { x: number; y: number };
+      if (attach && anchor) {
+        const w = (anchor as { measured?: { width?: number } }).measured?.width ?? 240;
+        position = { x: anchor.position.x + w + 90, y: anchor.position.y };
+      } else {
+        // otherwise spawn at the centre of what the user is currently looking at
+        const center = rf.current?.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+        position = center ? { x: center.x - 190, y: center.y - 70 } : { x: 160, y: 120 };
+      }
+
       setNodes((ns) => [
         ...ns.map((n) => (n.selected ? { ...n, selected: false } : n)),
         { id, type: nt, position, data: { type }, selected: true, className: 'spawn-flash' },
       ]);
+      if (attach && anchor) {
+        setEdges((es) => addEdge({ id: `e-${anchor.id}-${id}`, source: anchor.id, target: id, type: 'wire' }, es));
+      }
       // clear the flash class once the pulse has played
       setTimeout(() => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, className: undefined } : n))), 1100);
       if (type === 'sketch') setEditing(id); // drop it on the canvas AND open the pad
     },
-    [setNodes, stageLocked, router]
+    [setNodes, setEdges, stageLocked, router]
   );
 
   // drop a sticky note at the centre of the current view (not a pipeline stage — no gating)
@@ -897,6 +914,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onNodeContextMenu={onNodeContextMenu}
           onSelectionContextMenu={onSelectionContextMenu}
           onPaneContextMenu={onPaneContextMenu}
+          deleteKeyCode={['Backspace', 'Delete']}   /* click a node or wire, then Delete to remove it */
           onNodeDoubleClick={(_e, node) => {
             if (node.type === 'sketch') openSketch(node.id);
             else if (node.type === 'techpack') openTechpack(node.id);
