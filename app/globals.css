@@ -308,7 +308,7 @@ body {
   transition: transform .15s ease, box-shadow .15s ease; z-index: 3;
 }
 /* invisible enlarged hit area so you don't have to aim precisely */
-.react-flow__handle::after { content: ''; position: absolute; inset: -10px; border-radius: 50%; }
+.react-flow__handle::after { content: ''; position: absolute; inset: -20px; border-radius: 50%; }
 .react-flow__handle:hover,
 .react-flow__handle.connectionindicator:hover { transform: scale(1.45); box-shadow: 0 0 0 5px rgba(169,240,208,.18); }
 .react-flow__handle-right { right: -7px; }

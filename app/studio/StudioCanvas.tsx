@@ -934,7 +934,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onInit={(inst) => { rf.current = inst; viewportRef.current = inst.getViewport(); setCanvasReady(true); }}
           onMove={(_, vp) => { viewportRef.current = vp; }}
           isValidConnection={isValidConnection}
-          connectionRadius={44}
+          connectionRadius={90}
           onNodeContextMenu={onNodeContextMenu}
           onSelectionContextMenu={onSelectionContextMenu}
           onPaneContextMenu={onPaneContextMenu}
