@@ -42,7 +42,7 @@ import PatternProtoPanel from '@/components/PatternProtoPanel';
 import ManufacturePanel from '@/components/ManufacturePanel';
 import SamplePanel from '@/components/SamplePanel';
 import { StudioContext } from '@/lib/studio-context';
-import { STAGES, NEXT, STAGE_HOTKEYS, type StageKey, type View, type VisResult } from '@/lib/nodeTypes';
+import { STAGES, NEXT, STAGE_HOTKEYS, type StageKey, type View } from '@/lib/nodeTypes';
 import type { Techpack } from '@/lib/techpack';
 import type { ChosenManufacturer } from '@/lib/manufacturers';
 import type { Sample } from '@/lib/sample';
@@ -245,8 +245,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         return;
       }
 
+      const primaryId = inputs[0].id; // the render belongs to this input node
       const base = await urlToDataUrl('/base.jpg');
-      setNodeData(id, { loading: true, note: 'rendering…', preview: undefined }); // keep the current card visible
+      setNodeData(id, { loading: true, note: 'rendering…' }); // keep the current card visible
       try {
         const r = await fetch('/api/visualise', {
           method: 'POST',
@@ -255,10 +256,11 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         });
         const j = await r.json();
         if (j.image) {
+          // store the result AGAINST the primary input so switching thumbnails
+          // never loses a node's visualised image
           const cur = nodesRef.current.find((n) => n.id === id);
-          const prev = ((cur?.data as { results?: VisResult[] } | undefined)?.results) ?? [];
-          const results = [...prev, { id: `r-${Date.now().toString(36)}`, image: j.image, inputs: inputs.map((n) => n.id) }].slice(-20);
-          setNodeData(id, { results, active: results.length - 1, image: j.image, loading: false, note: undefined });
+          const byInput = { ...((cur?.data as { byInput?: Record<string, string> } | undefined)?.byInput ?? {}), [primaryId]: j.image };
+          setNodeData(id, { byInput, image: j.image, preview: primaryId, loading: false, note: undefined });
         } else {
           setNodeData(id, { loading: false, note: j.error || 'render failed' });
         }

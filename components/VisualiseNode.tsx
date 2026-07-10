@@ -3,14 +3,12 @@
 import { useState } from 'react';
 import { Handle, Position, useReactFlow, useNodeConnections, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
-import type { VisResult } from '@/lib/nodeTypes';
 
 type Data = {
-  image?: string;
-  results?: VisResult[];
-  active?: number;
-  order?: string[];   // input node-ids, first = primary (shown + processed)
-  preview?: string;   // input node-id currently previewed in the main card
+  image?: string;                     // mirror of the currently shown render (for downstream nodes)
+  byInput?: Record<string, string>;   // input node-id → its visualised result (never dropped on switch)
+  order?: string[];                   // input node-ids, first = primary (shown + processed)
+  preview?: string;                   // which input is focused in the big card (defaults to primary)
   loading?: boolean;
   note?: string;
 };
@@ -20,6 +18,7 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
   const rf = useReactFlow();
   const conns = useNodeConnections({ id, handleType: 'target' });
   const d = data as Data;
+  const byInput = d.byInput ?? {};
   const [dragId, setDragId] = useState<string | null>(null);
 
   // connected inputs that have a thumbnail (image or sketch nodes)
@@ -40,18 +39,16 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
   const inputs = order.map((x) => inputsRaw.find((i) => i.id === x)!).filter(Boolean);
   const primary = inputs[0];
 
-  const results = d.results ?? [];
-  const active = results.length ? Math.min(d.active ?? results.length - 1, results.length - 1) : -1;
-
-  // what shows in the big card: previewed input → active result → primary input
-  const previewInput = d.preview ? inputs.find((i) => i.id === d.preview) : undefined;
-  const card = previewInput?.thumb ?? results[active]?.image ?? d.image ?? primary?.thumb;
+  // the focused input = the one being previewed, else the primary. The big card shows
+  // that input's saved render if it has one, else its raw thumbnail.
+  const focusedId = (d.preview && ids.includes(d.preview)) ? d.preview : primary?.id;
+  const focused = inputs.find((i) => i.id === focusedId);
+  const card = focusedId ? (byInput[focusedId] ?? focused?.thumb) : d.image;
 
   const reorder = (targetId: string) => {
     if (!dragId || dragId === targetId) return;
     const next = order.filter((x) => x !== dragId);
-    const at = next.indexOf(targetId);
-    next.splice(at, 0, dragId);
+    next.splice(next.indexOf(targetId), 0, dragId);
     rf.updateNodeData(id, { order: next });
     setDragId(null);
   };
@@ -66,7 +63,7 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
           onClick={(e) => { e.stopPropagation(); visualise(id); }}
           disabled={d.loading || !inputs.length}
         >
-          {d.loading ? '…' : results.length ? 'visualise' : 'run'}
+          {d.loading ? '…' : Object.keys(byInput).length ? 'visualise' : 'run'}
         </button>
       </div>
 
@@ -80,40 +77,25 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
         )}
       </div>
 
-      {/* generated cards — click one to make it active in the big card */}
-      {results.length > 1 && (
-        <div className="vis-results nodrag nowheel">
-          {results.map((r, i) => (
-            <button
-              key={r.id}
-              className={`vis-card${i === active && !previewInput ? ' on' : ''}`}
-              title={`render ${i + 1}`}
-              onClick={(e) => { e.stopPropagation(); rf.updateNodeData(id, { active: i, image: r.image, preview: undefined }); }}
-            >
-              <img src={r.image} alt="" draggable={false} />
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* plugged-in inputs as cards — drag to reorder (first = primary/processed);
-          click to preview it in the big card above */}
+          click to preview it in the big card. Each keeps its own visualised result. */}
       {inputs.length > 0 && (
         <div className="vis-inputs nodrag nowheel">
           {inputs.map((inp, i) => (
             <button
               key={inp.id}
               draggable
-              className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${previewInput?.id === inp.id ? ' preview' : ''}${dragId === inp.id ? ' dragging' : ''}`}
-              title={`${inp.kind}${i === 0 ? ' — primary (processed on Run)' : ''} · drag to reorder, click to preview`}
-              onClick={(e) => { e.stopPropagation(); rf.updateNodeData(id, { preview: previewInput?.id === inp.id ? undefined : inp.id }); }}
+              className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${focusedId === inp.id ? ' focus' : ''}${dragId === inp.id ? ' dragging' : ''}`}
+              title={`${inp.kind}${i === 0 ? ' — primary (processed on Run)' : ''}${byInput[inp.id] ? ' · visualised' : ''} · drag to reorder, click to preview`}
+              onClick={(e) => { e.stopPropagation(); rf.updateNodeData(id, { preview: inp.id, image: byInput[inp.id] ?? d.image }); }}
               onDragStart={() => setDragId(inp.id)}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { e.preventDefault(); reorder(inp.id); }}
               onDragEnd={() => setDragId(null)}
             >
-              <img src={inp.thumb} alt="" draggable={false} />
+              <img src={byInput[inp.id] ?? inp.thumb} alt="" draggable={false} />
               {i === 0 && <span className="vis-primary-dot" />}
+              {byInput[inp.id] && <span className="vis-done-dot" />}
             </button>
           ))}
         </div>

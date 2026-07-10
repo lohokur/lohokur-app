@@ -964,9 +964,11 @@ body {
 .vis-in-card:active { cursor: grabbing; }
 .vis-in-card.vis-sketch { border-style: dashed; }        /* sketches dashed, images solid */
 .vis-in-card.primary { border-color: var(--mint); opacity: 1; box-shadow: 0 0 0 1px var(--mint); }
-.vis-in-card.preview { outline: 2px solid #fff; outline-offset: 1px; }
+.vis-in-card.focus { outline: 2px solid #fff; outline-offset: 1px; }
 .vis-in-card.dragging { opacity: .4; transform: scale(.94); }
 .vis-in-card img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
-/* little corner dot marking the primary (processed) card */
+/* top-left mint dot = primary (processed) · bottom-right dot = has a saved render */
 .vis-primary-dot { position: absolute; top: 3px; left: 3px; width: 7px; height: 7px; border-radius: 50%;
   background: var(--mint); box-shadow: 0 0 0 1.5px rgba(0,0,0,.5); }
+.vis-done-dot { position: absolute; bottom: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 0 1.5px rgba(0,0,0,.5); }
