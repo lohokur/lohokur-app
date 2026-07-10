@@ -222,8 +222,11 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const visualise = useCallback(
     async (id: string) => {
       const node = nodesRef.current.find((n) => n.id === id);
-      const order = (node?.data as { order?: string[] } | undefined)?.order ?? [];
-      // connected input nodes, ordered by the node's saved card order (first = primary)
+      const data0 = node?.data as { order?: string[]; preview?: string; byInput?: Record<string, string> } | undefined;
+      const order = data0?.order ?? [];
+      const byInput: Record<string, string> = { ...(data0?.byInput ?? {}) };
+
+      // connected inputs (ordered), each with a usable image
       const inputs = edgesRef.current
         .filter((e) => e.target === id)
         .map((e) => nodesRef.current.find((n) => n.id === e.source))
@@ -231,42 +234,55 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         .sort((a, b) => {
           const ia = order.indexOf(a.id), ib = order.indexOf(b.id);
           return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
-        });
+        })
+        .map((n) => {
+          const nd = n.data as { image?: string; views?: Record<string, string> };
+          const img = nd.image ?? nd.views?.front;
+          return img ? { id: n.id, kind: (n.type as string) || 'image', img } : null;
+        })
+        .filter((x): x is { id: string; kind: string; img: string } => !!x);
 
-      const payload: { url: string; kind: string }[] = [];
-      for (const n of inputs) {
-        const nd = n.data as { image?: string; views?: Record<string, string> };
-        const img = nd.image ?? nd.views?.front;
-        if (img) payload.push({ url: img, kind: (n.type as string) || 'image' });
-      }
-      if (!payload.length) {
+      if (!inputs.length) {
         setNodeData(id, { note: 'plug in a sketch or image, then run' });
         setTimeout(() => setNodeData(id, { note: undefined }), 2600);
         return;
       }
 
-      const primaryId = inputs[0].id; // the render belongs to this input node
-      const base = await urlToDataUrl('/base.jpg');
-      setNodeData(id, { loading: true, note: 'rendering…' }); // keep the current card visible
-      try {
-        const r = await fetch('/api/visualise', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ base, inputs: payload }),
-        });
-        const j = await r.json();
-        if (j.image) {
-          // store the result AGAINST the primary input so switching thumbnails
-          // never loses a node's visualised image
-          const cur = nodesRef.current.find((n) => n.id === id);
-          const byInput = { ...((cur?.data as { byInput?: Record<string, string> } | undefined)?.byInput ?? {}), [primaryId]: j.image };
-          setNodeData(id, { byInput, image: j.image, preview: primaryId, loading: false, note: undefined });
-        } else {
-          setNodeData(id, { loading: false, note: j.error || 'render failed' });
-        }
-      } catch {
-        setNodeData(id, { loading: false, note: 'render failed' });
+      // a selected card → redo just that one; otherwise visualise every input that
+      // doesn't have a render yet (each node gets its own visualisation)
+      const focused = data0?.preview && inputs.some((w) => w.id === data0.preview) ? data0.preview : undefined;
+      const targets = focused ? inputs.filter((w) => w.id === focused) : inputs.filter((w) => !byInput[w.id]);
+      if (!targets.length) {
+        setNodeData(id, { note: 'all visualised — tap a card to redo' });
+        setTimeout(() => setNodeData(id, { note: undefined }), 2600);
+        return;
       }
+
+      const base = await urlToDataUrl('/base.jpg');
+      let last: string | undefined;
+      for (let i = 0; i < targets.length; i++) {
+        const t = targets[i];
+        setNodeData(id, { loading: true, note: targets.length > 1 ? `rendering ${i + 1}/${targets.length}…` : 'rendering…', preview: t.id });
+        try {
+          const r = await fetch('/api/visualise', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ base, inputs: [{ url: t.img, kind: t.kind }] }),
+          });
+          const j = await r.json();
+          if (j.image) {
+            byInput[t.id] = j.image;
+            last = j.image;
+            setNodeData(id, { byInput: { ...byInput }, image: j.image, preview: t.id, loading: true });
+          } else if (targets.length === 1) {
+            setNodeData(id, { loading: false, note: j.error || 'render failed' });
+            return;
+          }
+        } catch {
+          if (targets.length === 1) { setNodeData(id, { loading: false, note: 'render failed' }); return; }
+        }
+      }
+      setNodeData(id, { byInput, image: last ?? byInput[inputs[0].id], loading: false, note: undefined });
     },
     [setNodeData]
   );

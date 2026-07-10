@@ -63,7 +63,7 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
           onClick={(e) => { e.stopPropagation(); visualise(id); }}
           disabled={d.loading || !inputs.length}
         >
-          {d.loading ? '…' : Object.keys(byInput).length ? 'visualise' : 'run'}
+          {d.loading ? '…' : (d.preview && ids.includes(d.preview)) ? 'redo' : Object.keys(byInput).length ? 'visualise' : 'run'}
         </button>
       </div>
 
@@ -85,9 +85,13 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
             <button
               key={inp.id}
               draggable
-              className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${focusedId === inp.id ? ' focus' : ''}${dragId === inp.id ? ' dragging' : ''}`}
-              title={`${inp.kind}${i === 0 ? ' — primary (processed on Run)' : ''}${byInput[inp.id] ? ' · visualised' : ''} · drag to reorder, click to preview`}
-              onClick={(e) => { e.stopPropagation(); rf.updateNodeData(id, { preview: inp.id, image: byInput[inp.id] ?? d.image }); }}
+              className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${d.preview === inp.id ? ' focus' : ''}${dragId === inp.id ? ' dragging' : ''}`}
+              title={`${inp.kind}${byInput[inp.id] ? ' · visualised' : ''} · click to select (then Visualise redoes just this) · drag to reorder`}
+              onClick={(e) => {
+                e.stopPropagation();
+                const on = d.preview === inp.id;                  // toggle selection
+                rf.updateNodeData(id, { preview: on ? undefined : inp.id, image: on ? d.image : (byInput[inp.id] ?? d.image) });
+              }}
               onDragStart={() => setDragId(inp.id)}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { e.preventDefault(); reorder(inp.id); }}
