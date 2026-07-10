@@ -942,3 +942,21 @@ body {
 .note-node.editing .note-ta { pointer-events: auto; cursor: text; resize: both; }
 .note-ta::placeholder { color: rgba(35,32,15,.4); }
 .note-ta::-webkit-resizer { background: transparent; }
+
+/* ---------- visualise: input thumbnails + result gallery ---------- */
+.vis-results { display: flex; gap: 5px; overflow-x: auto; padding: 7px 8px 2px; }
+.vis-results::-webkit-scrollbar { height: 5px; }
+.vis-results::-webkit-scrollbar-thumb { background: var(--glass-line); border-radius: 3px; }
+.vis-card { flex: 0 0 auto; width: 34px; height: 46px; border-radius: 5px; overflow: hidden;
+  border: 1px solid var(--glass-line); padding: 0; background: none; cursor: pointer; opacity: .65; }
+.vis-card.on { border-color: var(--mint); opacity: 1; box-shadow: 0 0 0 1px var(--mint); }
+.vis-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.vis-inputs { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-top: 1px solid var(--glass-line); }
+.vis-thumb { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 7px; overflow: hidden;
+  border: 1.5px solid var(--glass-line); padding: 0; background: none; cursor: pointer; opacity: .5;
+  transition: opacity .12s ease, border-color .12s ease; }
+.vis-thumb:hover { opacity: .8; }
+.vis-thumb.on { opacity: 1; border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint); }
+.vis-thumb.vis-sketch { border-style: dashed; }   /* sketch inputs read as dashed, images solid */
+.vis-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }

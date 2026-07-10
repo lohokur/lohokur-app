@@ -40,11 +40,40 @@ function promptFor(view: string) {
   ].join(' ');
 }
 
-export async function POST(req: Request) {
-  const { sketch, base, view } = await req.json().catch(() => ({}));
-  if (!sketch || !base) {
-    return NextResponse.json({ error: 'missing sketch or base image' }, { status: 400 });
+// Combined mode: dress the base model in one or more design sketches, using any
+// plugged-in reference images for material/colour/style. Image order passed to the
+// model is: [base, ...sketches, ...references].
+function combinedPrompt(nSketch: number, nRef: number) {
+  const parts = [BASE];
+  if (nSketch > 0) {
+    parts.push(
+      `The next ${nSketch} image${nSketch > 1 ? 's are' : ' is a'} hand-drawn DESIGN SKETCH${nSketch > 1 ? 'es' : ''} of garments/outfits. Dress the figure in ${nSketch > 1 ? 'these designs' : 'this design'}, faithfully translating the sketched design — silhouette, proportions, layers, key details — into real, well-made clothing worn by the figure.`,
+    );
   }
+  if (nRef > 0) {
+    parts.push(
+      nSketch > 0
+        ? `The final ${nRef} image${nRef > 1 ? 's are' : ' is a'} STYLE REFERENCE${nRef > 1 ? 's' : ''} — use ${nRef > 1 ? 'them' : 'it'} ONLY for material, colour, texture, print and styling cues to inform how the garments look. Do NOT reproduce ${nRef > 1 ? 'them' : 'it'} as separate objects.`
+        : `The next ${nRef} image${nRef > 1 ? 's show garments/outfits' : ' shows a garment/outfit'} to wear. Dress the figure in ${nRef > 1 ? 'them' : 'it'}, faithfully reproducing the garment${nRef > 1 ? 's' : ''} as real worn clothing.`,
+    );
+  }
+  parts.push(FRAMING);
+  parts.push(
+    'KEEP EVERYTHING ELSE IDENTICAL to the base photo: same faceless figure, body, pose, room, wall, floor, wiring panel and lighting. Only add the clothing; uncovered areas stay the black bodysuit. Output a single photorealistic, full-length image head to feet.',
+  );
+  return parts.join(' ');
+}
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const { sketch, base, view } = body as { sketch?: string; base?: string; view?: string };
+  const sketches: string[] = Array.isArray(body.sketches) ? body.sketches.filter((x: unknown) => typeof x === 'string') : [];
+  const refs: string[] = Array.isArray(body.images) ? body.images.filter((x: unknown) => typeof x === 'string') : [];
+  const combined = sketches.length > 0 || refs.length > 0;
+
+  if (!base) return NextResponse.json({ error: 'missing base image' }, { status: 400 });
+  if (!combined && !sketch) return NextResponse.json({ error: 'plug in a sketch or image first' }, { status: 400 });
+
   const gate = await consumeGeneration();
   if (!gate.ok) {
     return NextResponse.json(
@@ -53,11 +82,13 @@ export async function POST(req: Request) {
     );
   }
   try {
-    // base first, then the garment sketch — matches promptFor()'s FIRST/SECOND image wording.
-    const image = await editImage(promptFor(view || 'front'), [base, sketch]);
+    // image order matters — the prompt refers to FIRST / next / final images by position
+    const prompt = combined ? combinedPrompt(sketches.length, refs.length) : promptFor(view || 'front');
+    const imgs = combined ? [base, ...sketches, ...refs] : [base, sketch!];
+    const image = await editImage(prompt, imgs);
     return NextResponse.json({ image });
   } catch (e) {
-    console.error('[visualise] view=%s failed:', view, (e as Error).message);
+    console.error('[visualise] failed:', (e as Error).message);
     await refundGeneration();
     return NextResponse.json({ error: (e as Error).message || 'generation failed' }, { status: 500 });
   }

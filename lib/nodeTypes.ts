@@ -12,6 +12,9 @@ export type StageKey =
 
 export type Stage = { key: StageKey; label: string; hint: string };
 
+// A generated Visualise card: one render from a chosen combo of plugged-in inputs.
+export type VisResult = { id: string; image: string; inputs: string[] };
+
 // The LOHO KUR pipeline, in order. v1 = structure only (no AI yet).
 export const STAGES: Stage[] = [
   { key: 'sketch', label: 'Sketch', hint: 'Draw or drop an idea' },

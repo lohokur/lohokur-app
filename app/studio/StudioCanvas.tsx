@@ -42,7 +42,7 @@ import PatternProtoPanel from '@/components/PatternProtoPanel';
 import ManufacturePanel from '@/components/ManufacturePanel';
 import SamplePanel from '@/components/SamplePanel';
 import { StudioContext } from '@/lib/studio-context';
-import { STAGES, NEXT, VIEWS, STAGE_HOTKEYS, type StageKey, type View } from '@/lib/nodeTypes';
+import { STAGES, NEXT, STAGE_HOTKEYS, type StageKey, type View, type VisResult } from '@/lib/nodeTypes';
 import type { Techpack } from '@/lib/techpack';
 import type { ChosenManufacturer } from '@/lib/manufacturers';
 import type { Sample } from '@/lib/sample';
@@ -216,49 +216,55 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     [setNodes]
   );
 
-  // Visualise: BATCH — render each connected sketch view (front, then side, then back) on the base
+  // Visualise: dress the base model in the SELECTED sketch(es) plugged in, using any
+  // selected image(s) as style/material reference. Each run appends a card to the
+  // node's gallery (kept to the last 20) so you can compare different input combos.
   const visualise = useCallback(
     async (id: string) => {
-      const edge = edgesRef.current.find((e) => e.target === id);
-      const src = edge ? nodesRef.current.find((n) => n.id === edge.source) : undefined;
-      const sd = src?.data as { image?: string; views?: Partial<Record<View, string>> } | undefined;
-      const sviews: Partial<Record<View, string>> = sd?.views ?? (sd?.image ? { front: sd.image } : {});
-      const present = VIEWS.filter((v) => sviews[v]);
-      if (!present.length) {
-        setNodeData(id, { note: 'connect a sketch first' });
+      const node = nodesRef.current.find((n) => n.id === id);
+      const sel = (node?.data as { sel?: string[] } | undefined)?.sel;
+      // connected input nodes (optionally filtered to the selected thumbnails)
+      let inputs = edgesRef.current
+        .filter((e) => e.target === id)
+        .map((e) => nodesRef.current.find((n) => n.id === e.source))
+        .filter((n): n is Node => !!n);
+      if (sel) inputs = inputs.filter((n) => sel.includes(n.id));
+
+      const sketches: string[] = [];
+      const refs: string[] = [];
+      for (const n of inputs) {
+        const nd = n.data as { image?: string; views?: Record<string, string> };
+        const img = nd.image ?? nd.views?.front;
+        if (!img) continue;
+        if (n.type === 'sketch') sketches.push(img);
+        else refs.push(img); // image (or other) → style/garment reference
+      }
+      if (!sketches.length && !refs.length) {
+        setNodeData(id, { note: 'plug in a sketch or image, then run' });
         setTimeout(() => setNodeData(id, { note: undefined }), 2600);
         return;
       }
+
       const base = await urlToDataUrl('/base.jpg');
-      const out: Partial<Record<View, string>> = {};
-      // keep the existing image/views on screen while regenerating — a failed or
-      // interrupted re-render must NOT wipe the media that's already saved
-      setNodeData(id, { loading: true, note: undefined });
-      for (let i = 0; i < present.length; i++) {
-        const view = present[i];
-        setNodeData(id, { loading: true, note: `rendering ${view}… (${i + 1}/${present.length})` });
-        try {
-          const r = await fetch('/api/visualise', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ sketch: sviews[view], base, view }),
-          });
-          const j = await r.json();
-          if (j.image) {
-            out[view] = j.image;
-            setNodeData(id, { views: { ...out }, image: out.front ?? out[view], loading: true });
-          }
-        } catch {
-          /* keep going with the other views */
+      setNodeData(id, { loading: true, note: 'rendering…' }); // keep the current card visible
+      try {
+        const r = await fetch('/api/visualise', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ base, sketches, images: refs }),
+        });
+        const j = await r.json();
+        if (j.image) {
+          const cur = nodesRef.current.find((n) => n.id === id);
+          const prev = ((cur?.data as { results?: VisResult[] } | undefined)?.results) ?? [];
+          const results = [...prev, { id: `r-${Date.now().toString(36)}`, image: j.image, inputs: inputs.map((n) => n.id) }].slice(-20);
+          setNodeData(id, { results, active: results.length - 1, image: j.image, loading: false, note: undefined });
+        } else {
+          setNodeData(id, { loading: false, note: j.error || 'render failed' });
         }
+      } catch {
+        setNodeData(id, { loading: false, note: 'render failed' });
       }
-      const any = Object.keys(out).length > 0;
-      setNodeData(id, {
-        views: out,
-        image: out.front ?? Object.values(out)[0],
-        loading: false,
-        note: any ? undefined : 'render failed',
-      });
     },
     [setNodeData]
   );
