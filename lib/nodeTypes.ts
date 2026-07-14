@@ -22,7 +22,7 @@ export const STAGES: Stage[] = [
   { key: 'studio', label: 'Brand studio', hint: 'Plug in a visual · prompt it anywhere' },
   { key: 'image', label: 'Image', hint: 'Upload, paste or prompt an image' },
   { key: 'extract', label: 'Extract', hint: 'Isolate one piece' },
-  { key: 'pattern', label: 'Pattern maker', hint: 'Graded flat pieces' },
+  { key: 'pattern', label: 'Pattern maker', hint: 'Trace a 2D outline' },
   { key: 'techpack', label: 'Techpack', hint: 'Spec · grading · BOM' },
   { key: 'sample', label: 'Create Sample', hint: 'One sample · ship to you' },
   { key: 'manufacture', label: 'Manufacture', hint: 'Vetted factory · bulk' },

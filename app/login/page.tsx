@@ -44,7 +44,7 @@ export default function Login() {
   return (
     <main className="gate">
       <form className="gate-card" onSubmit={submit}>
-        <div className="gate-mark">LOHO KUR</div>
+        <div className="gate-mark"><img src="/lk-logo.png" alt="LOHO KUR" /></div>
         <h1 className="gate-h">{mode === 'up' ? 'Create your studio' : 'Welcome back'}</h1>
         <p className="gate-sub">{mode === 'up' ? 'Sign up to start building.' : 'Sign in to your studio.'}</p>
         <button type="button" className="gate-google" onClick={google}>

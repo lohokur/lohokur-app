@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { listProjects, createProject } from '@/lib/client-store';
+import { TEMPLATES, type Template } from '@/lib/templates';
 import type { Project } from '@/lib/types';
 
 const MIN_SLOTS = 12;
@@ -76,6 +77,7 @@ type Slot = { kind: 'project'; p: Project; idx: number; preview?: string } | { k
 export default function Home() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[] | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState('');
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLElement | null)[]>([]);
@@ -85,9 +87,13 @@ export default function Home() {
   // feed the query to the animation loop without restarting it
   useEffect(() => { queryRef.current = query.trim().toLowerCase(); }, [query]);
 
-  async function newProject() {
+  // "new project" now opens the template picker instead of dropping you on a blank canvas
+  function newProject() { setPickerOpen(true); }
+
+  async function createFrom(t: Template) {
+    setPickerOpen(false);
     try {
-      const p = await createProject('Untitled');
+      const p = await createProject(t.id === 'blank' ? 'Untitled' : t.name, t.build());
       router.push(`/studio/${p.id}`);
     } catch (e) {
       // project-count cap hit (enforced by the DB trigger) → send them to upgrade
@@ -241,6 +247,38 @@ export default function Home() {
               </button>
             )
           )}
+        </div>
+      )}
+
+      {pickerOpen && (
+        <div className="tpl-overlay" onClick={() => setPickerOpen(false)}>
+          <div className="tpl-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="tpl-head">
+              <h2>Start a new project</h2>
+              <button className="tpl-x" onClick={() => setPickerOpen(false)} aria-label="Close">×</button>
+            </div>
+            <div className="tpl-grid">
+              {TEMPLATES.map((t) => (
+                <button key={t.id} className={`tpl-card${t.id === 'core' ? ' rec' : ''}`} onClick={() => createFrom(t)}>
+                  {t.id === 'core' && <span className="tpl-rec">Recommended</span>}
+                  <div className="tpl-flow">
+                    {t.stages.length === 0 ? (
+                      <span className="tpl-chip ghost">blank</span>
+                    ) : (
+                      t.stages.map((s, i) => (
+                        <span key={s + i} className="tpl-chip-wrap">
+                          {i > 0 && <span className="tpl-arrow">→</span>}
+                          <span className="tpl-chip">{s}</span>
+                        </span>
+                      ))
+                    )}
+                  </div>
+                  <div className="tpl-name">{t.name}</div>
+                  <div className="tpl-blurb">{t.blurb}</div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </main>

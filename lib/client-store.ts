@@ -1,6 +1,6 @@
 'use client';
 
-import { type Project, makeId } from './types';
+import { type Project, type Flow, makeId } from './types';
 import { supabaseBrowser } from './supabase/client';
 
 // Client-facing persistence.
@@ -51,20 +51,21 @@ export async function getProject(id: string): Promise<Project | null> {
   return lread().find((p) => p.id === id) ?? null;
 }
 
-export async function createProject(name?: string): Promise<Project> {
+export async function createProject(name?: string, flow?: Flow): Promise<Project> {
+  const f: Flow = flow ?? { nodes: [], edges: [] };
   if (HAS_DB) {
     const sb = supabaseBrowser();
     const { data: { user } } = await sb.auth.getUser();
     const { data, error } = await sb
       .from('projects')
-      .insert({ user_id: user?.id, name: name?.trim() || 'Untitled', flow: { nodes: [], edges: [] } })
+      .insert({ user_id: user?.id, name: name?.trim() || 'Untitled', flow: f })
       .select('*')
       .single();
     if (error || !data) throw new Error(error?.message || 'could not create project');
     return rowToProject(data);
   }
   const now = Date.now();
-  const p: Project = { id: makeId(), name: name?.trim() || 'Untitled', flow: { nodes: [], edges: [] }, createdAt: now, updatedAt: now };
+  const p: Project = { id: makeId(), name: name?.trim() || 'Untitled', flow: f, createdAt: now, updatedAt: now };
   lwrite([...lread(), p]);
   return p;
 }

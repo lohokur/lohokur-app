@@ -30,7 +30,7 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
             className="sn-edit nodrag"
             onClick={(e) => { e.stopPropagation(); openPattern(id); }}
           >
-            flatten
+            outline
           </button>
           <button
             className="sn-edit nodrag"
@@ -50,7 +50,7 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
       <div className="sn-draw" onDoubleClick={() => openPattern(id)}>
         {image
           ? <img src={image} alt="Pattern" draggable={false} />
-          : <span className="sn-empty">flatten a surface into a pattern</span>}
+          : <span className="sn-empty">trace a garment into an outline</span>}
       </div>
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>

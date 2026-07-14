@@ -32,13 +32,14 @@ import CanvasMenu, { type MenuState, type MenuItem } from '@/components/CanvasMe
 import DotField from '@/components/DotField';
 import SketchStudio from '@/components/SketchStudio';
 import StudioLoader from '@/components/StudioLoader';
+import SkeletonNode from '@/components/SkeletonNode';
 import StudioTopbar from '@/components/StudioTopbar';
 import StudioDock from '@/components/StudioDock';
 import StudioLibrary, { type LibItem } from '@/components/StudioLibrary';
 import { useRouter } from 'next/navigation';
 import TechpackPanel from '@/components/TechpackPanel';
 import ExtractPanel from '@/components/ExtractPanel';
-import PatternProtoPanel from '@/components/PatternProtoPanel';
+import PatternPanel from '@/components/PatternPanel';
 import ManufacturePanel from '@/components/ManufacturePanel';
 import SamplePanel from '@/components/SamplePanel';
 import { StudioContext } from '@/lib/studio-context';
@@ -52,6 +53,7 @@ import type { Project } from '@/lib/types';
 
 const nodeTypes = {
   stage: StageNode,
+  skeleton: SkeletonNode,
   sketch: SketchNode,
   visualise: VisualiseNode,
   studio: StudioNode,
@@ -143,6 +145,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [hintDismissed, setHintDismissed] = useState(false); // first-run empty-canvas hint
   const [menu, setMenu] = useState<MenuState>(null); // right-click context menu
   const clipboard = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null); // in-app node copy buffer
   const [running, setRunning] = useState(false); // Run-chain in flight
@@ -169,31 +172,43 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       if (p) {
         const ns = (p.flow?.nodes as Node[]) ?? [];
         const es = ((p.flow?.edges as Edge[]) ?? []).map((e) => ({ ...e, type: 'wire' as const, animated: false }));
-        setNodes(ns);
+        // Paint shaped skeleton placeholders at each node's spot right away, then
+        // reveal — don't hold the loader hostage to the image bytes.
+        const skel = ns.map((n) => ({
+          ...n, type: 'skeleton', data: { type: n.type },
+          draggable: false, selectable: false, connectable: false, deletable: false,
+        })) as Node[];
+        setNodes(ns.length ? skel : ns);
         setEdges(es);
-        hist.current = [{ nodes: ns, edges: es }]; // history baseline
+        hist.current = [{ nodes: ns, edges: es }]; // history baseline = the REAL nodes
         hIdx.current = 0;
         syncHist();
-        setDataProg(0.6); // nodes/edges hydrated
-        // preload every image the nodes reference so the canvas paints instantly
+        setDataProg(0.9); // layout known → hand the loader off to the skeleton canvas
+
+        // Background: preload every referenced image, then swap skeletons → real nodes.
         const urls: string[] = [];
         for (const n of ns) {
           const d = n.data as { image?: string; views?: Record<string, string> } | undefined;
           if (d?.image) urls.push(d.image);
           if (d?.views) for (const v of Object.values(d.views)) if (typeof v === 'string') urls.push(v);
         }
+        const reveal = () => {
+          if (cancelled) return;
+          if (ns.length) setNodes(ns); // swap placeholders for the real, image-bearing nodes
+          loadedNonEmpty.current = ns.length > 0;
+          loaded.current = true;
+        };
         if (urls.length) {
-          let n = 0;
-          await Promise.all(urls.map((src) => new Promise<void>((res) => {
+          Promise.all(urls.map((src) => new Promise<void>((res) => {
             const im = new Image();
-            const fin = () => { n++; if (!cancelled) setDataProg(0.6 + (n / urls.length) * 0.3); res(); };
+            const fin = () => res();
             im.onload = fin; im.onerror = fin; im.src = src;
-          })));
+          }))).then(reveal);
+        } else {
+          reveal();
         }
-      }
-      if (!cancelled) {
+      } else if (!cancelled) {
         setDataProg(0.9);
-        loadedNonEmpty.current = ((p?.flow?.nodes as Node[] | undefined)?.length ?? 0) > 0;
         loaded.current = true;
       }
     });
@@ -867,6 +882,16 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     return d?.views?.front ?? d?.image;
   }, [editingExtract, nodes, edges]);
 
+  // the garment feeding the Pattern node being edited — upstream node, else its own image
+  const editingPatternImage = useMemo<string | undefined>(() => {
+    if (!editingPattern) return undefined;
+    const edge = edges.find((e) => e.target === editingPattern);
+    const src = edge ? nodes.find((n) => n.id === edge.source) : undefined;
+    const sd = src?.data as { image?: string; views?: Partial<Record<View, string>> } | undefined;
+    const od = nodes.find((n) => n.id === editingPattern)?.data as { image?: string } | undefined;
+    return sd?.views?.front ?? sd?.image ?? od?.image;
+  }, [editingPattern, nodes, edges]);
+
   // the stored tech pack + the upstream piece feeding the Techpack node being edited
   const editingTechpackValue = useMemo<Techpack | undefined>(() => {
     if (!editingTechpack) return undefined;
@@ -988,6 +1013,23 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           </Panel>
         </ReactFlow>
 
+        {canvasReady && !booting && project && nodes.length === 0 && !hintDismissed && (
+          <div className="firstrun" onClick={() => setHintDismissed(true)}>
+            <div className="firstrun-card" onClick={(e) => e.stopPropagation()}>
+              <button className="firstrun-x" aria-label="Dismiss" onClick={() => setHintDismissed(true)}>×</button>
+              <div className="firstrun-title">Start your first design</div>
+              <div className="firstrun-steps">
+                <span><kbd>S</kbd> Sketch</span>
+                <span className="firstrun-arrow">→</span>
+                <span><kbd>V</kbd> Visualise</span>
+                <span className="firstrun-arrow">→</span>
+                <span><kbd>E</kbd> Extract</span>
+              </div>
+              <div className="firstrun-sub">Press a key to drop a node — or pick one from the dock on the left.</div>
+            </div>
+          </div>
+        )}
+
         <SketchStudio
           open={!!editing}
           nodeId={editing}
@@ -1012,8 +1054,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onClose={() => setEditingExtract(null)}
         />
 
-        <PatternProtoPanel
+        <PatternPanel
           open={!!editingPattern}
+          nodeId={editingPattern}
+          image={editingPatternImage}
           onGenerated={(img) => { if (editingPattern) setNodeImage(editingPattern, img); }}
           onClose={() => setEditingPattern(null)}
         />
