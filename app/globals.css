@@ -789,7 +789,7 @@ body {
   border: 1px solid var(--glass-line); border-radius: 16px; box-shadow: 0 40px 100px -40px rgba(0,0,0,.9);
 }
 .gate-mark { display: flex; justify-content: center; margin-bottom: 10px; }
-.gate-mark img { height: 30px; width: auto; display: block; filter: invert(1) drop-shadow(0 1px 8px rgba(0,0,0,.55)); }
+.gate-mark img { height: 20px; width: auto; display: block; filter: invert(1) drop-shadow(0 1px 8px rgba(0,0,0,.55)); }
 .gate-h { font-size: 25px; font-weight: 600; color: var(--fg); margin: 2px 0 0; }
 .gate-sub { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; }
 .gate-input {
