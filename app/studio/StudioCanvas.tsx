@@ -145,7 +145,6 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [hintDismissed, setHintDismissed] = useState(false); // first-run empty-canvas hint
   const [menu, setMenu] = useState<MenuState>(null); // right-click context menu
   const clipboard = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null); // in-app node copy buffer
   const [running, setRunning] = useState(false); // Run-chain in flight
@@ -388,6 +387,24 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     ]);
     setTimeout(() => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, className: undefined } : n))), 1100);
   }, [setNodes]);
+
+  // seed an empty canvas with a starter chain (from the fresh-canvas quick-starts)
+  const seed = useCallback((stages: StageKey[]) => {
+    if (!stages.length) return;
+    const gap = 300;
+    const ns: Node[] = [];
+    const es: Edge[] = [];
+    stages.forEach((st, i) => {
+      const id = `${st}-${Date.now().toString(36)}-${counter++}`;
+      ns.push({ id, type: CUSTOM[st] ?? 'stage', position: { x: 140 + i * gap, y: 190 }, data: { type: st }, className: 'spawn-flash' });
+      if (i > 0) es.push({ id: `e-${ns[i - 1].id}-${id}`, source: ns[i - 1].id, target: id, type: 'wire' });
+    });
+    setNodes(ns);
+    setEdges(es);
+    setTimeout(() => setNodes((cur) => cur.map((n) => ({ ...n, className: undefined }))), 1100);
+    setTimeout(() => rf.current?.fitView({ duration: 400, padding: 0.35 }), 80);
+    if (stages[0] === 'sketch') setEditing(ns[0].id); // open the pad on the first sketch
+  }, [setNodes, setEdges]);
 
   const setNoteText = useCallback(
     (id: string, text: string) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, text } } : n))),
@@ -1013,19 +1030,16 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           </Panel>
         </ReactFlow>
 
-        {canvasReady && !booting && project && nodes.length === 0 && !hintDismissed && (
-          <div className="firstrun" onClick={() => setHintDismissed(true)}>
-            <div className="firstrun-card" onClick={(e) => e.stopPropagation()}>
-              <button className="firstrun-x" aria-label="Dismiss" onClick={() => setHintDismissed(true)}>×</button>
-              <div className="firstrun-title">Start your first design</div>
-              <div className="firstrun-steps">
-                <span><kbd>S</kbd> Sketch</span>
-                <span className="firstrun-arrow">→</span>
-                <span><kbd>V</kbd> Visualise</span>
-                <span className="firstrun-arrow">→</span>
-                <span><kbd>E</kbd> Extract</span>
-              </div>
-              <div className="firstrun-sub">Press a key to drop a node — or pick one from the dock on the left.</div>
+        {canvasReady && !booting && project && nodes.length === 0 && (
+          <div className="freshstart">
+            <div className="fs-hint">
+              <span className="fs-spark">✦</span> Pick a starting point — or press <kbd>S</kbd> sketch · <kbd>V</kbd> visualise · <kbd>I</kbd> image
+            </div>
+            <div className="fs-pills">
+              <button onClick={() => seed(['sketch'])}>Sketch a design</button>
+              <button onClick={() => seed(['sketch', 'visualise'])}>Sketch → Visualise</button>
+              <button onClick={() => seed(['image'])}>Start from an image</button>
+              <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack'])}>Full pipeline</button>
             </div>
           </div>
         )}
