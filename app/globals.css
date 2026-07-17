@@ -218,6 +218,31 @@ body {
 .pset-meta dt { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted); }
 .pset-meta dd { margin: 0; font-family: var(--mono); font-size: 11px; color: var(--fg); text-align: right; word-break: break-all; }
 
+/* paywall / out-of-generations modal */
+.pw-scrim { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 5, 7, .66); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  animation: pw-fade .16s ease; }
+@keyframes pw-fade { from { opacity: 0; } to { opacity: 1; } }
+.pw-card { width: min(90vw, 420px); padding: 28px 26px 24px; border-radius: 18px; text-align: center;
+  background: rgba(16, 19, 18, .98); border: 1px solid var(--glass-line);
+  box-shadow: 0 30px 90px -28px rgba(0,0,0,.92); animation: pw-rise .2s ease; }
+@keyframes pw-rise { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.pw-bolt { font-size: 26px; line-height: 1; margin-bottom: 12px; }
+.pw-title { margin: 0 0 8px; font-family: var(--sans); font-size: 19px; font-weight: 600; color: var(--fg); }
+.pw-body { margin: 0 0 20px; font-family: var(--sans); font-size: 14px; line-height: 1.5; color: var(--muted); }
+.pw-err { margin: -10px 0 14px; font-family: var(--mono); font-size: 11px; color: #ff9a9a; }
+.pw-actions { display: flex; flex-direction: column; gap: 12px; }
+.pw-primary { padding: 12px 16px; border-radius: 11px; border: none; cursor: pointer;
+  background: var(--fg); color: var(--ink); font-family: var(--sans); font-size: 14px; font-weight: 600;
+  transition: opacity .12s ease; }
+.pw-primary:hover:not(:disabled) { opacity: .88; }
+.pw-primary:disabled { opacity: .5; cursor: default; }
+.pw-secondary { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.pw-secondary a { font-family: var(--mono); font-size: 12px; color: var(--muted); text-decoration: none; }
+.pw-secondary a:hover { color: var(--fg); }
+.pw-dismiss { background: none; border: none; cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.pw-dismiss:hover { color: var(--fg); }
+
 /* icon rail — each button reveals its label on hover (bounces out to the right) */
 .dock {
   display: flex; flex-direction: column; gap: 4px; padding: 7px;

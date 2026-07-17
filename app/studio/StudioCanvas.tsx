@@ -36,6 +36,8 @@ import SkeletonNode from '@/components/SkeletonNode';
 import StudioTopbar from '@/components/StudioTopbar';
 import StudioDock from '@/components/StudioDock';
 import GenMeter from '@/components/GenMeter';
+import PaywallModal from '@/components/PaywallModal';
+import { openPaywall, blockedByCap } from '@/lib/paywall';
 import StudioLibrary, { type LibItem } from '@/components/StudioLibrary';
 import { useRouter } from 'next/navigation';
 import TechpackPanel from '@/components/TechpackPanel';
@@ -140,6 +142,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const viewportRef = useRef({ x: 0, y: 0, zoom: 1 }); // live React Flow viewport for the dot field
   const router = useRouter();
   const me = useMe();
+  const meRef = useRef(me);
+  meRef.current = me; // always-fresh usage for proactive cap checks inside callbacks
   const stageLocked = useCallback(
     (k: StageKey) => (me ? !me.entitlements.stages.includes(k) : false),
     [me],
@@ -273,6 +277,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         return;
       }
 
+      // out of generations → paywall now, before any slow render
+      if (blockedByCap(meRef.current)) { setNodeData(id, { busy: undefined, note: undefined }); return; }
+
       const base = await urlToDataUrl('/base.jpg');
       let last: string | undefined;
       for (let i = 0; i < targets.length; i++) {
@@ -291,6 +298,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
             last = j.image;
             setNodeData(id, { byInput: { ...byInput }, image: j.image, busy: t.id });
             notifyGenUsed();
+          } else if (j.upgrade) {
+            openPaywall(); // hit the cap mid-batch — stop and surface the paywall
+            setNodeData(id, { busy: undefined, note: undefined });
+            return;
           } else if (targets.length === 1) {
             setNodeData(id, { busy: undefined, note: j.error || 'render failed' });
             return;
@@ -474,6 +485,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       const img = sd?.image ?? sd?.views?.front;
       if (img) inputs.push(img);
     }
+    // out of generations → paywall now, before the slow render
+    if (blockedByCap(meRef.current)) { setNodeData(id, { loading: false, note: undefined, prompt }); return; }
+
     setNodeData(id, { loading: true, note: 'generating…', prompt });
     try {
       const res = await fetch('/api/imagine', {
@@ -483,6 +497,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       });
       const j = await res.json();
       if (j.image) { setNodeData(id, { image: j.image, loading: false, note: undefined, prompt }); notifyGenUsed(); }
+      else if (j.upgrade) { openPaywall(); setNodeData(id, { loading: false, note: undefined, prompt }); }
       else setNodeData(id, { loading: false, note: j.error || 'no image returned' });
     } catch (err) {
       setNodeData(id, { loading: false, note: (err as Error).message || 'generation failed' });
@@ -1035,6 +1050,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
             <StudioDock stages={STAGES} onAdd={addNode} onNote={addNote} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={() => router.push('/profile')} isLocked={stageLocked} onLocked={() => router.push('/pricing')} />
           </Panel>
         </ReactFlow>
+
+        <PaywallModal />
 
         {canvasReady && !booting && project && nodes.length === 0 && (
           <div className="freshstart">

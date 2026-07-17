@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { notifyGenUsed } from '@/lib/use-billing';
+import { openPaywall } from '@/lib/paywall';
 
 // A detected garment: friendly label + reveal mask (alpha=garment) + contour edge
 // canvas + centroid (for the traveling ring) + pixel area (smallest-wins hover).
@@ -228,7 +229,8 @@ export default function ExtractPanel({
       });
       const j = await r.json();
       if (j.image) { notifyGenUsed(); onExtracted(j.image); onClose(); return; }
-      setStatus(j.upgrade ? 'monthly generation limit reached — upgrade to extract more' : (j.error || 'extraction failed'));
+      if (j.upgrade) { openPaywall(); setStatus('out of generations'); }
+      else setStatus(j.error || 'extraction failed');
     } catch {
       setStatus('extraction failed');
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { openPaywall } from '@/lib/paywall';
 
 type Stage = 'outline' | 'refine' | 'deconstruct' | 'number';
 
@@ -73,8 +74,10 @@ export default function PatternPanel({
         const set = dest === 'outline' ? setOutline : dest === 'panels' ? setPanels : setNumbered;
         set(j.image);
         setStatus('');
+      } else if (j.upgrade) {
+        openPaywall(); setStatus('out of generations');
       } else {
-        setStatus(j.upgrade ? 'monthly generation limit reached — upgrade to keep drafting' : (j.error || 'generation failed'));
+        setStatus(j.error || 'generation failed');
       }
     } catch {
       setStatus('generation failed');
