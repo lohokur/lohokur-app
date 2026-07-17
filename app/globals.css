@@ -1061,10 +1061,9 @@ body {
 
 /* ---------- generation meter (top-right of canvas) ---------- */
 .genmeter { display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
-  background: rgba(16,19,21,.72); backdrop-filter: blur(12px); border: 1px solid var(--glass-line);
-  border-radius: 999px; padding: 7px 13px; color: var(--fg); font-family: var(--mono);
-  font-size: 12px; letter-spacing: .02em; transition: border-color .12s ease; }
-.genmeter:hover { border-color: rgba(169,240,208,.5); }
+  color: var(--fg); font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6); transition: color .12s ease; }
+.genmeter:hover { color: var(--mint); }
 .gm-bolt { width: 13px; height: 13px; fill: var(--mint); flex: 0 0 auto; }
 .gm-count { font-weight: 600; }
 .gm-bar { width: 46px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
