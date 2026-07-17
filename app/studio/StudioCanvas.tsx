@@ -1083,7 +1083,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
               <button onClick={() => seed(['image'])}>Start from an image</button>
               <button onClick={() => seed(['sketch'])}>Sketch a design</button>
               <button onClick={() => seed(['sketch', 'visualise'])}>Sketch → Visualise</button>
-              <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack'])}>Full pipeline</button>
+              <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'ship'])}>Sketch → physical product</button>
             </div>
           </div>
         )}
