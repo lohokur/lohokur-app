@@ -1133,9 +1133,18 @@ body {
 
 /* ---------- generation meter (top-right of canvas) ---------- */
 .genmeter { display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+  background: none; border: none; padding: 0; cursor: pointer;
   color: var(--fg); font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
   text-shadow: 0 1px 3px rgba(0,0,0,.6); transition: color .12s ease; }
 .genmeter:hover { color: var(--mint); }
+
+/* my-profile modal (opened from the credits meter / dock) */
+.pf-card { width: min(90vw, 480px); }
+.pf-head { display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--fg); }
+.pf-x { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; line-height: 1; }
+.pf-x:hover { color: var(--fg); }
+.pf-card .billing-card { width: 100%; max-width: none; margin-top: 14px; }
 .gm-bolt { width: 13px; height: 13px; fill: var(--mint); flex: 0 0 auto; }
 .gm-count { font-weight: 600; }
 .gm-bar { width: 46px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }

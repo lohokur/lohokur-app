@@ -37,7 +37,9 @@ import StudioTopbar from '@/components/StudioTopbar';
 import StudioDock from '@/components/StudioDock';
 import GenMeter from '@/components/GenMeter';
 import PaywallModal from '@/components/PaywallModal';
+import ProfileModal from '@/components/ProfileModal';
 import { openPaywall, blockedByCap } from '@/lib/paywall';
+import { openProfile } from '@/lib/profile';
 import StudioLibrary, { type LibItem } from '@/components/StudioLibrary';
 import { useRouter } from 'next/navigation';
 import TechpackPanel from '@/components/TechpackPanel';
@@ -1067,11 +1069,12 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           </Panel>
 
           <Panel position="center-left">
-            <StudioDock stages={STAGES} onAdd={addNode} onNote={addNote} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={() => router.push('/profile')} isLocked={stageLocked} onLocked={() => router.push('/pricing')} />
+            <StudioDock stages={STAGES} onAdd={addNode} onNote={addNote} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={openProfile} isLocked={stageLocked} onLocked={() => router.push('/pricing')} />
           </Panel>
         </ReactFlow>
 
         <PaywallModal />
+        <ProfileModal />
 
         {canvasReady && !booting && project && nodes.length === 0 && (
           <div className="freshstart">
