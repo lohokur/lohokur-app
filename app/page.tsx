@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { listProjects, createProject } from '@/lib/client-store';
+import { useMe } from '@/lib/use-billing';
 import type { Project } from '@/lib/types';
 
 const MIN_SLOTS = 12;
@@ -75,6 +76,7 @@ type Slot = { kind: 'project'; p: Project; idx: number; preview?: string } | { k
 
 export default function Home() {
   const router = useRouter();
+  const me = useMe();
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [query, setQuery] = useState('');
   const stageRef = useRef<HTMLDivElement>(null);
@@ -191,6 +193,7 @@ export default function Home() {
           <button className="hp-icon" aria-label="Settings" title="Settings">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
           </button>
+          {me?.isAdmin && <a className="hp-item" href="/admin">Analytics</a>}
           <button className="hp-item" onClick={async () => { await supabaseBrowser().auth.signOut(); router.push('/login'); router.refresh(); }}>Sign out</button>
           <button className="hp-item">Invite</button>
           <button className="hp-item cta" onClick={newProject}>

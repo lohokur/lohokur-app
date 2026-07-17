@@ -1,6 +1,7 @@
 import 'server-only';
 import { supabaseServer } from './supabase/server';
 import { generationCap, entitlementsFor, type Entitlements } from './entitlements';
+import { isAdmin } from './admin';
 
 // Metering is skipped entirely when there's no Supabase backend (local dev fallback).
 const HAS_DB = process.env.NEXT_PUBLIC_HAS_DB === '1';
@@ -48,6 +49,7 @@ export type ProfileView = {
   subscriptionStatus: string | null;
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
+  isAdmin: boolean;
 };
 
 // Full profile + resolved entitlements for the signed-in user (for /profile, /pricing).
@@ -69,5 +71,6 @@ export async function getProfileView(): Promise<ProfileView | null> {
     subscriptionStatus: data?.subscription_status ?? null,
     currentPeriodEnd: data?.current_period_end ?? null,
     stripeCustomerId: data?.stripe_customer_id ?? null,
+    isAdmin: isAdmin(user.email),
   };
 }
