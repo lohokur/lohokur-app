@@ -35,6 +35,7 @@ import StudioLoader from '@/components/StudioLoader';
 import SkeletonNode from '@/components/SkeletonNode';
 import StudioTopbar from '@/components/StudioTopbar';
 import StudioDock from '@/components/StudioDock';
+import GenMeter from '@/components/GenMeter';
 import StudioLibrary, { type LibItem } from '@/components/StudioLibrary';
 import { useRouter } from 'next/navigation';
 import TechpackPanel from '@/components/TechpackPanel';
@@ -48,7 +49,7 @@ import type { Techpack } from '@/lib/techpack';
 import type { ChosenManufacturer } from '@/lib/manufacturers';
 import type { Sample } from '@/lib/sample';
 import { getProject, saveProject, createProject } from '@/lib/client-store';
-import { useMe } from '@/lib/use-billing';
+import { useMe, notifyGenUsed } from '@/lib/use-billing';
 import type { Project } from '@/lib/types';
 
 const nodeTypes = {
@@ -289,6 +290,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
             byInput[t.id] = j.image;
             last = j.image;
             setNodeData(id, { byInput: { ...byInput }, image: j.image, busy: t.id });
+            notifyGenUsed();
           } else if (targets.length === 1) {
             setNodeData(id, { busy: undefined, note: j.error || 'render failed' });
             return;
@@ -480,7 +482,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         body: JSON.stringify({ prompt, images: inputs }),
       });
       const j = await res.json();
-      if (j.image) setNodeData(id, { image: j.image, loading: false, note: undefined, prompt });
+      if (j.image) { setNodeData(id, { image: j.image, loading: false, note: undefined, prompt }); notifyGenUsed(); }
       else setNodeData(id, { loading: false, note: j.error || 'no image returned' });
     } catch (err) {
       setNodeData(id, { loading: false, note: (err as Error).message || 'generation failed' });
@@ -1023,6 +1025,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
               canUndo={histMeta.undo}
               canRedo={histMeta.redo}
             />
+          </Panel>
+
+          <Panel position="top-right">
+            <GenMeter />
           </Panel>
 
           <Panel position="center-left">

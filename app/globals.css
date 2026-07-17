@@ -1058,3 +1058,19 @@ body {
   padding: 9px 17px; color: var(--fg); font-size: 13px; cursor: pointer;
   transition: border-color .12s ease, background .12s ease, transform .1s ease; }
 .fs-pills button:hover { border-color: rgba(169,240,208,.55); background: rgba(169,240,208,.08); transform: translateY(-1px); }
+
+/* ---------- generation meter (top-right of canvas) ---------- */
+.genmeter { display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+  background: rgba(16,19,21,.72); backdrop-filter: blur(12px); border: 1px solid var(--glass-line);
+  border-radius: 999px; padding: 7px 13px; color: var(--fg); font-family: var(--mono);
+  font-size: 12px; letter-spacing: .02em; transition: border-color .12s ease; }
+.genmeter:hover { border-color: rgba(169,240,208,.5); }
+.gm-bolt { width: 13px; height: 13px; fill: var(--mint); flex: 0 0 auto; }
+.gm-count { font-weight: 600; }
+.gm-bar { width: 46px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+.gm-fill { display: block; height: 100%; background: var(--mint); border-radius: 3px; transition: width .3s ease; }
+.genmeter.low .gm-fill, .genmeter.low .gm-bolt { background: #f2b705; fill: #f2b705; }
+.genmeter.out { border-color: #ff6b6b; color: #ff9a9a; }
+.genmeter.out .gm-bolt { fill: #ff6b6b; }
+.genmeter.out .gm-fill { background: #ff6b6b; }
+.gm-up { font-weight: 700; color: var(--ink); background: var(--mint); border-radius: 999px; padding: 2px 8px; font-size: 10.5px; }

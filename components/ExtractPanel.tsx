@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { notifyGenUsed } from '@/lib/use-billing';
 
 // A detected garment: friendly label + reveal mask (alpha=garment) + contour edge
 // canvas + centroid (for the traveling ring) + pixel area (smallest-wins hover).
@@ -226,7 +227,7 @@ export default function ExtractPanel({
         body: JSON.stringify({ image, label: p.label }),
       });
       const j = await r.json();
-      if (j.image) { onExtracted(j.image); onClose(); return; }
+      if (j.image) { notifyGenUsed(); onExtracted(j.image); onClose(); return; }
       setStatus(j.upgrade ? 'monthly generation limit reached — upgrade to extract more' : (j.error || 'extraction failed'));
     } catch {
       setStatus('extraction failed');
