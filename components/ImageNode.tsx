@@ -7,10 +7,12 @@ import { useStudio } from '@/lib/studio-context';
 // Image node: upload a file, paste, or type a prompt to generate an image.
 export default function ImageNode({ id, data, selected }: NodeProps) {
   const { promptImage, setNodeImage } = useStudio();
-  const d = data as { image?: string; loading?: boolean; note?: string; prompt?: string };
+  const d = data as { image?: string; loading?: boolean; note?: string; prompt?: string; coachGenerate?: boolean };
   const [text, setText] = useState(d.prompt ?? '');
   const fileRef = useRef<HTMLInputElement>(null);
   const submit = () => { if (text.trim() && !d.loading) promptImage(id, text.trim()); };
+  // nudge the very first render: a pre-filled example is one click away
+  const coach = !!d.coachGenerate && !d.image && !d.loading && !!text.trim();
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -43,9 +45,9 @@ export default function ImageNode({ id, data, selected }: NodeProps) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Describe an image to generate…"
           rows={2}
-          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
         />
-        <button className="sn-go" disabled={d.loading || !text.trim()} onClick={submit}>{d.loading ? '…' : 'Generate'}</button>
+        <button className={`sn-go${coach ? ' coach' : ''}`} disabled={d.loading || !text.trim()} onClick={submit}>{d.loading ? '…' : 'Generate'}</button>
       </div>
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>

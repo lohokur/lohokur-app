@@ -466,6 +466,12 @@ body {
 }
 .sn-go:hover:not(:disabled) { background: #c4f5da; }
 .sn-go:disabled { opacity: .4; cursor: default; }
+/* coach the very first render: gently pulse Generate on the seeded example */
+.sn-go.coach { animation: sn-go-coach 1.5s ease-in-out infinite; }
+@keyframes sn-go-coach {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(169,240,208,.55); }
+  50% { box-shadow: 0 0 0 6px rgba(169,240,208,0); }
+}
 
 /* ---------- sketch studio (full-screen photoshop-style editor) ---------- */
 /* docked card by default; .full expands to the whole screen */
@@ -1122,6 +1128,8 @@ body {
   padding: 9px 17px; color: var(--fg); font-size: 13px; cursor: pointer;
   transition: border-color .12s ease, background .12s ease, transform .1s ease; }
 .fs-pills button:hover { border-color: rgba(169,240,208,.55); background: rgba(169,240,208,.08); transform: translateY(-1px); }
+.fs-pills button.fs-try { background: var(--mint); color: var(--ink); border-color: transparent; font-weight: 600; }
+.fs-pills button.fs-try:hover { background: #c4f5da; }
 
 /* ---------- generation meter (top-right of canvas) ---------- */
 .genmeter { display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
