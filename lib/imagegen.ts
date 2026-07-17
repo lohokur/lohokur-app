@@ -34,12 +34,12 @@ async function geminiImage(prompt: string, images: string[]): Promise<string> {
   throw new Error(text ? `model returned no image: ${text.slice(0, 200)}` : 'model returned no image');
 }
 
-/** Edit / transform input images per the prompt. */
-export async function editImage(prompt: string, images: string[]): Promise<string> {
-  return useFal() ? falEdit(prompt, images) : geminiImage(prompt, images);
+/** Edit / transform input images per the prompt. `pro` picks Nano Banana Pro vs the cheaper model. */
+export async function editImage(prompt: string, images: string[], pro = true): Promise<string> {
+  return useFal() ? falEdit(prompt, images, pro) : geminiImage(prompt, images);
 }
 
-/** Generate from a prompt, optionally guided by reference images. */
-export async function generateImage(prompt: string, refs: string[] = []): Promise<string> {
-  return useFal() ? falGenerate(prompt, refs) : geminiImage(prompt, refs);
+/** Generate from a prompt, optionally guided by reference images. `pro` picks the model. */
+export async function generateImage(prompt: string, refs: string[] = [], pro = true): Promise<string> {
+  return useFal() ? falGenerate(prompt, refs, pro) : geminiImage(prompt, refs);
 }

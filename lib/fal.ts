@@ -12,8 +12,11 @@ import { fal } from '@fal-ai/client';
  * on the canvas (fal's hosted URLs are temporary).
  */
 
-const EDIT_MODEL = process.env.FAL_EDIT_MODEL || 'fal-ai/nano-banana-pro/edit';
-const GEN_MODEL = process.env.FAL_GEN_MODEL || 'fal-ai/nano-banana-pro';
+// Pro (paid tiers) → Nano Banana Pro (~$0.15). Free tier → Nano Banana (~$0.039).
+const EDIT_MODEL_PRO = process.env.FAL_EDIT_MODEL || 'fal-ai/nano-banana-pro/edit';
+const EDIT_MODEL_FREE = process.env.FAL_EDIT_MODEL_FREE || 'fal-ai/nano-banana/edit';
+const GEN_MODEL_PRO = process.env.FAL_GEN_MODEL || 'fal-ai/nano-banana-pro';
+const GEN_MODEL_FREE = process.env.FAL_GEN_MODEL_FREE || 'fal-ai/nano-banana';
 const RESOLUTION = process.env.FAL_RESOLUTION || '1K';
 
 let configured = false;
@@ -41,20 +44,20 @@ function firstImageUrl(result: FalImageResult): string {
   return url;
 }
 
-/** Edit / transform one or more input images per the prompt. Returns a data URL. */
-export async function falEdit(prompt: string, imageDataUrls: string[]): Promise<string> {
+/** Edit / transform one or more input images per the prompt. `pro` picks the model. */
+export async function falEdit(prompt: string, imageDataUrls: string[], pro = true): Promise<string> {
   ensureConfigured();
-  const result = (await fal.subscribe(EDIT_MODEL, {
+  const result = (await fal.subscribe(pro ? EDIT_MODEL_PRO : EDIT_MODEL_FREE, {
     input: { prompt, image_urls: imageDataUrls, num_images: 1, output_format: 'png', resolution: RESOLUTION },
   })) as FalImageResult;
   return toDataUrl(firstImageUrl(result));
 }
 
-/** Generate an image from a prompt (optionally guided by reference images). Returns a data URL. */
-export async function falGenerate(prompt: string, imageDataUrls: string[] = []): Promise<string> {
-  if (imageDataUrls.length) return falEdit(prompt, imageDataUrls);
+/** Generate an image from a prompt (optionally guided by reference images). `pro` picks the model. */
+export async function falGenerate(prompt: string, imageDataUrls: string[] = [], pro = true): Promise<string> {
+  if (imageDataUrls.length) return falEdit(prompt, imageDataUrls, pro);
   ensureConfigured();
-  const result = (await fal.subscribe(GEN_MODEL, {
+  const result = (await fal.subscribe(pro ? GEN_MODEL_PRO : GEN_MODEL_FREE, {
     input: { prompt, num_images: 1, output_format: 'png', resolution: RESOLUTION },
   })) as FalImageResult;
   return toDataUrl(firstImageUrl(result));

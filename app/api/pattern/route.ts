@@ -75,7 +75,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const out = await editImage(prompt, inputs);
+    const out = await editImage(prompt, inputs, gate.tier !== 'free');
     return NextResponse.json({ image: out });
   } catch (e) {
     await refundGeneration();

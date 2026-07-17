@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     const refs = ordered ? inputs.slice(1) : [];
     const prompt = orderedPrompt(primary.kind, refs.length);
     const imgs = [base, primary.url, ...refs.map((r) => r.url)];
-    const image = await editImage(prompt, imgs);
+    const image = await editImage(prompt, imgs, gate.tier !== 'free');
     return NextResponse.json({ image });
   } catch (e) {
     console.error('[visualise] failed:', (e as Error).message);
