@@ -8,8 +8,8 @@ import { fal } from '@fal-ai/client';
  * single key (FAL_KEY) that works anywhere, including Vercel.
  *
  * fal accepts base64 data-URIs directly in image_urls, and returns a hosted
- * URL. We fetch that back into a self-contained data URL so the result persists
- * on the canvas (fal's hosted URLs are temporary).
+ * URL. fal's hosted URLs are temporary, so the caller (imagegen) persists the
+ * result to our own storage — we just return fal's URL here.
  */
 
 // Pro (paid tiers) → Nano Banana Pro (~$0.15). Free tier → Nano Banana (~$0.039).
@@ -28,14 +28,6 @@ function ensureConfigured() {
   configured = true;
 }
 
-async function toDataUrl(url: string): Promise<string> {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`failed to fetch generated image (${r.status})`);
-  const buf = Buffer.from(await r.arrayBuffer());
-  const ct = r.headers.get('content-type') || 'image/png';
-  return `data:${ct};base64,${buf.toString('base64')}`;
-}
-
 type FalImageResult = { data?: { images?: Array<{ url?: string }>; description?: string } };
 
 function firstImageUrl(result: FalImageResult): string {
@@ -50,7 +42,7 @@ export async function falEdit(prompt: string, imageDataUrls: string[], pro = tru
   const result = (await fal.subscribe(pro ? EDIT_MODEL_PRO : EDIT_MODEL_FREE, {
     input: { prompt, image_urls: imageDataUrls, num_images: 1, output_format: 'png', resolution: RESOLUTION },
   })) as FalImageResult;
-  return toDataUrl(firstImageUrl(result));
+  return firstImageUrl(result);
 }
 
 /** Generate an image from a prompt (optionally guided by reference images). `pro` picks the model. */
@@ -60,5 +52,5 @@ export async function falGenerate(prompt: string, imageDataUrls: string[] = [], 
   const result = (await fal.subscribe(pro ? GEN_MODEL_PRO : GEN_MODEL_FREE, {
     input: { prompt, num_images: 1, output_format: 'png', resolution: RESOLUTION },
   })) as FalImageResult;
-  return toDataUrl(firstImageUrl(result));
+  return firstImageUrl(result);
 }

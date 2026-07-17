@@ -5,8 +5,10 @@ import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 // Image generation can take a while (~30–90s).
 export const maxDuration = 300;
 
-const isDataUrl = (x: unknown): x is string =>
-  typeof x === 'string' && /^data:.+?;base64,/.test(x);
+// Accept both inline data-URLs and hosted image URLs (previous renders are now
+// stored as Supabase Storage URLs, not base64) — fal fetches either kind.
+const isImageRef = (x: unknown): x is string =>
+  typeof x === 'string' && (/^data:.+?;base64,/.test(x) || /^https?:\/\//.test(x));
 
 // Generic image endpoint:
 //   { prompt }                    → text-to-image
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
     );
   }
   try {
-    const refs = (Array.isArray(images) ? images : []).filter(isDataUrl);
+    const refs = (Array.isArray(images) ? images : []).filter(isImageRef);
     const guide = refs.length
       ? 'You are given one or more source images. Transform / restyle / rebrand them exactly as described below, preserving the product itself faithfully unless told otherwise. Output a single photorealistic, high-resolution image. '
       : 'Generate a single photorealistic, high-resolution image as described below. ';

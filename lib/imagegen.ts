@@ -1,5 +1,6 @@
 import { getGenAI } from '@/lib/genai';
 import { falEdit, falGenerate } from '@/lib/fal';
+import { persistImage } from '@/lib/storage';
 
 /**
  * Provider-agnostic image generation.
@@ -9,7 +10,9 @@ import { falEdit, falGenerate } from '@/lib/fal';
  * - Otherwise → Gemini via Vertex+ADC (local dev fallback, needs
  *   `gcloud auth application-default login`).
  *
- * Both return a self-contained data URL so results persist on the canvas.
+ * Whatever the provider returns (a fal URL or a data URL) is uploaded to our own
+ * Supabase Storage via persistImage() so the canvas stores a lightweight, durable
+ * URL instead of a base64 blob.
  */
 const useFal = () => !!process.env.FAL_KEY;
 
@@ -36,10 +39,12 @@ async function geminiImage(prompt: string, images: string[]): Promise<string> {
 
 /** Edit / transform input images per the prompt. `pro` picks Nano Banana Pro vs the cheaper model. */
 export async function editImage(prompt: string, images: string[], pro = true): Promise<string> {
-  return useFal() ? falEdit(prompt, images, pro) : geminiImage(prompt, images);
+  const out = useFal() ? await falEdit(prompt, images, pro) : await geminiImage(prompt, images);
+  return persistImage(out);
 }
 
 /** Generate from a prompt, optionally guided by reference images. `pro` picks the model. */
 export async function generateImage(prompt: string, refs: string[] = [], pro = true): Promise<string> {
-  return useFal() ? falGenerate(prompt, refs, pro) : geminiImage(prompt, refs);
+  const out = useFal() ? await falGenerate(prompt, refs, pro) : await geminiImage(prompt, refs);
+  return persistImage(out);
 }
