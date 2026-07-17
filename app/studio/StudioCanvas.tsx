@@ -1027,7 +1027,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
             />
           </Panel>
 
-          <Panel position="top-right">
+          <Panel position="bottom-left">
             <GenMeter />
           </Panel>
 
