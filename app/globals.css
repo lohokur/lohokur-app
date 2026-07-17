@@ -1144,7 +1144,8 @@ body {
   font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--fg); }
 .pf-x { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; line-height: 1; }
 .pf-x:hover { color: var(--fg); }
-.pf-card .billing-card { width: 100%; max-width: none; margin-top: 14px; }
+.pf-card .billing-card { width: 100%; max-width: none; margin-top: 14px;
+  background: rgba(16, 19, 18, .98); box-shadow: 0 30px 80px -30px rgba(0,0,0,.9); }
 .gm-bolt { width: 13px; height: 13px; fill: var(--mint); flex: 0 0 auto; }
 .gm-count { font-weight: 600; }
 .gm-bar { width: 46px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
