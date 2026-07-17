@@ -17,9 +17,9 @@ const PRICE: Record<Exclude<Tier, 'free'>, Record<Cadence, number>> = {
 const featuresFor = (tier: Tier): string[] => {
   const e = TIERS[tier];
   return [
-    e.projects === Infinity ? 'Unlimited projects' : `${e.projects} project${e.projects > 1 ? 's' : ''}`,
     `${e.generations.toLocaleString()} AI generations / month`,
-    tier === 'free' ? 'Sketch + visualise' : tier === 'pro' ? 'Techpack, extract & pattern nodes' : 'Every stage — incl. manufacture & sample',
+    e.projects === Infinity ? 'Unlimited projects' : `${e.projects} project${e.projects > 1 ? 's' : ''}`,
+    'Every node unlocked — full pipeline',
   ];
 };
 

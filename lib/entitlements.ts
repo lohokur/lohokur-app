@@ -12,16 +12,13 @@ export type Entitlements = {
   stages: string[]; // node/stage types this tier can use
 };
 
-// Stage keys mirror lib/nodeTypes.ts StageKey.
-// Free: draw, render, drop images. Pro: brand-studio prompt + garment tooling.
-// Studio: production + fulfilment. (Adjust these arrays to retune what each plan unlocks.)
-const FREE_STAGES = ['sketch', 'visualise', 'image'];
-const PRO_STAGES = [...FREE_STAGES, 'studio', 'techpack', 'extract', 'pattern'];
-const ALL_STAGES = [...PRO_STAGES, 'manufacture', 'sample', 'ship'];
+// Every node/stage is available to ALL tiers — plans differ only by project count
+// and monthly generation cap (the real cost lever). Stage keys mirror lib/nodeTypes.ts.
+const ALL_STAGES = ['sketch', 'visualise', 'studio', 'image', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'ship'];
 
 export const TIERS: Record<Tier, Entitlements> = {
-  free:   { tier: 'free',   label: 'Free',   projects: 1,        generations: 3,    stages: FREE_STAGES },
-  pro:    { tier: 'pro',    label: 'Pro',    projects: 10,       generations: 200,  stages: PRO_STAGES },
+  free:   { tier: 'free',   label: 'Free',   projects: 1,        generations: 3,    stages: ALL_STAGES },
+  pro:    { tier: 'pro',    label: 'Pro',    projects: 10,       generations: 200,  stages: ALL_STAGES },
   studio: { tier: 'studio', label: 'Studio', projects: Infinity, generations: 1000, stages: ALL_STAGES },
 };
 
