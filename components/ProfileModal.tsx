@@ -117,7 +117,9 @@ export default function ProfileModal() {
                   <div className="set-plan-actions">
                     {me?.hasSubscription
                       ? <button className="set-btn primary" disabled={busy} onClick={manage}>{busy ? 'Opening…' : 'Manage & invoices'}</button>
-                      : <Link href="/pricing" className="set-btn primary" onClick={() => setOpen(false)}>Upgrade</Link>}
+                      : me?.tier === 'studio'
+                        ? <span className="set-toptier">Top tier</span>
+                        : <Link href="/pricing" className="set-btn primary" onClick={() => setOpen(false)}>Upgrade</Link>}
                   </div>
                 </div>
               </div>

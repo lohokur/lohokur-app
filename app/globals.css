@@ -1189,6 +1189,9 @@ body {
 .set-btn.primary { background: var(--fg); color: var(--ink); }
 .set-btn.primary:hover:not(:disabled) { opacity: .88; }
 .set-btn:disabled { opacity: .5; cursor: default; }
+.set-toptier { display: inline-block; padding: 8px 14px; border-radius: 999px; font-family: var(--mono);
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--mint);
+  background: rgba(169,240,208,.12); border: 1px solid rgba(169,240,208,.3); }
 .set-signout { align-self: flex-start; padding: 9px 16px; border-radius: 10px; cursor: pointer;
   background: none; border: 1px solid var(--glass-line); color: var(--fg); font-family: var(--sans); font-size: 13px; }
 .set-signout:hover { border-color: rgba(255,120,120,.5); color: #ff9a9a; }
