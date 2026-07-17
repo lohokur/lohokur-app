@@ -20,7 +20,7 @@ const PRO_STAGES = [...FREE_STAGES, 'studio', 'techpack', 'extract', 'pattern'];
 const ALL_STAGES = [...PRO_STAGES, 'manufacture', 'sample', 'ship'];
 
 export const TIERS: Record<Tier, Entitlements> = {
-  free:   { tier: 'free',   label: 'Free',   projects: 1,        generations: 10,   stages: FREE_STAGES },
+  free:   { tier: 'free',   label: 'Free',   projects: 1,        generations: 3,    stages: FREE_STAGES },
   pro:    { tier: 'pro',    label: 'Pro',    projects: 10,       generations: 200,  stages: PRO_STAGES },
   studio: { tier: 'studio', label: 'Studio', projects: Infinity, generations: 1000, stages: ALL_STAGES },
 };

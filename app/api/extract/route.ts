@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     );
   }
   try {
-    const out = await editImage(prompt, [image], gate.tier !== 'free');
+    const out = await editImage(prompt, [image]);
     return NextResponse.json({ image: out });
   } catch (e) {
     await refundGeneration();

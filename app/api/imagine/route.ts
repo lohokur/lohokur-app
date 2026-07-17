@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       ? 'You are given one or more source images. Transform / restyle / rebrand them exactly as described below, preserving the product itself faithfully unless told otherwise. Output a single photorealistic, high-resolution image. '
       : 'Generate a single photorealistic, high-resolution image as described below. ';
 
-    const image = await generateImage(guide + String(prompt).trim(), refs, gate.tier !== 'free');
+    const image = await generateImage(guide + String(prompt).trim(), refs);
     return NextResponse.json({ image });
   } catch (e) {
     await refundGeneration(); // generation failed — refund the credit
