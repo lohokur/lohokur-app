@@ -6,6 +6,7 @@ import { entitlementsFor, type Entitlements } from './entitlements';
 const HAS_DB = process.env.NEXT_PUBLIC_HAS_DB === '1';
 
 export type Me = {
+  email: string | null;
   tier: string;
   gensUsed: number;
   subscriptionStatus: string | null;
@@ -21,14 +22,14 @@ export function useMe(): Me | null {
   const [me, setMe] = useState<Me | null>(null);
   useEffect(() => {
     if (!HAS_DB) {
-      setMe({ tier: 'studio', gensUsed: 0, subscriptionStatus: null, currentPeriodEnd: null, hasSubscription: false, isAdmin: true, entitlements: entitlementsFor('studio') });
+      setMe({ email: null, tier: 'studio', gensUsed: 0, subscriptionStatus: null, currentPeriodEnd: null, hasSubscription: false, isAdmin: true, entitlements: entitlementsFor('studio') });
       return;
     }
     let live = true;
     const load = () => fetch('/api/billing/me')
       .then((r) => r.json())
       .then((d) => { if (live) setMe({ ...d, entitlements: entitlementsFor(d.tier) }); })
-      .catch(() => { if (live) setMe((prev) => prev ?? { tier: 'free', gensUsed: 0, subscriptionStatus: null, currentPeriodEnd: null, hasSubscription: false, isAdmin: false, entitlements: entitlementsFor('free') }); });
+      .catch(() => { if (live) setMe((prev) => prev ?? { email: null, tier: 'free', gensUsed: 0, subscriptionStatus: null, currentPeriodEnd: null, hasSubscription: false, isAdmin: false, entitlements: entitlementsFor('free') }); });
     load();
     window.addEventListener('lk-gen-used', load);
     window.addEventListener('focus', load);

@@ -43,6 +43,7 @@ export async function refundGeneration(cost = 1): Promise<void> {
 }
 
 export type ProfileView = {
+  email: string | null;
   tier: Entitlements['tier'];
   entitlements: Entitlements;
   gensUsed: number;
@@ -65,6 +66,7 @@ export async function getProfileView(): Promise<ProfileView | null> {
     .maybeSingle();
   const tier = data?.tier ?? 'free';
   return {
+    email: user.email ?? null,
     tier,
     entitlements: entitlementsFor(tier),
     gensUsed: data?.gens_used ?? 0,
