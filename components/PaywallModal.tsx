@@ -7,9 +7,9 @@ import { useMe, startCheckout } from '@/lib/use-billing';
 // Tier-aware "you're out of generations" moment. Any generation path can open it
 // via openPaywall() (lib/paywall). Upsells to the next tier with one tap.
 const UPSELL: Record<string, { plan: 'pro' | 'studio'; label: string; price: number; gens: number } | null> = {
-  free: { plan: 'pro', label: 'Pro', price: 12, gens: 200 },
-  pro: { plan: 'studio', label: 'Studio', price: 30, gens: 1000 },
-  studio: null, // top tier — nothing higher to sell
+  free: { plan: 'pro', label: 'Pro', price: 30, gens: 200 },
+  pro: { plan: 'studio', label: 'Studio', price: 99, gens: 1000 },
+  studio: null, // top self-serve tier — Enterprise is contact-sales only
 };
 
 export default function PaywallModal() {

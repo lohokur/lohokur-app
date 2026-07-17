@@ -10,8 +10,8 @@ type Cadence = 'monthly' | 'annual';
 // Display pricing (marketing copy). MUST match the amounts on the Stripe Prices
 // you create — Stripe is the source of truth for what's actually charged.
 const PRICE: Record<Exclude<Tier, 'free'>, Record<Cadence, number>> = {
-  pro: { monthly: 12, annual: 120 },
-  studio: { monthly: 30, annual: 300 },
+  pro: { monthly: 30, annual: 300 },
+  studio: { monthly: 99, annual: 990 },
 };
 
 const featuresFor = (tier: Tier): string[] => {
@@ -82,6 +82,19 @@ export default function PricingPage() {
             </div>
           );
         })}
+
+        {/* Enterprise — no self-serve checkout; talk to sales */}
+        <div className="plan-card">
+          <h2 className="plan-name">Enterprise</h2>
+          <div className="plan-price plan-price-custom">Let’s talk</div>
+          <ul className="plan-features">
+            <li>Everything in Studio</li>
+            <li>Volume generation limits</li>
+            <li>Priority support &amp; onboarding</li>
+            <li>Custom terms &amp; invoicing</li>
+          </ul>
+          <a className="plan-cta ghost" href="mailto:studio@lohokur.com?subject=Enterprise%20enquiry">Contact sales</a>
+        </div>
       </div>
     </main>
   );

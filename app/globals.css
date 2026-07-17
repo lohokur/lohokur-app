@@ -1003,7 +1003,7 @@ body {
 .pricing-err { color: #ff6b6b; font-size: 13px; margin: 4px 0 12px; }
 
 .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px; margin-top: 8px; max-width: 860px; }
+  gap: 16px; margin-top: 8px; max-width: 1120px; }
 .plan-card { position: relative; display: flex; flex-direction: column; gap: 14px;
   background: var(--glass); border: 1px solid var(--glass-line); border-radius: 16px; padding: 24px 22px; }
 .plan-card.featured { border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint), 0 18px 44px -20px var(--mint); }
@@ -1012,6 +1012,7 @@ body {
   padding: 3px 8px; border-radius: 6px; font-weight: 700; }
 .plan-name { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: .01em; }
 .plan-price { font-size: 34px; font-weight: 300; letter-spacing: -.02em; }
+.plan-price-custom { font-size: 24px; font-weight: 400; }
 .plan-per { font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 2px; }
 .plan-features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; flex: 1; }
 .plan-features li { color: var(--muted); font-size: 13px; padding-left: 20px; position: relative; }

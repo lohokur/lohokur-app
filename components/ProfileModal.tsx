@@ -12,7 +12,7 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 
 type Section = 'profile' | 'billing' | 'usage';
 
-const PRICE: Record<string, number | null> = { free: null, pro: 12, studio: 30 };
+const PRICE: Record<string, number | null> = { free: null, pro: 30, studio: 99 };
 
 export default function ProfileModal() {
   const me = useMe();
