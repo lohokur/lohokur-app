@@ -38,7 +38,7 @@ export default function StudioLibrary({ items, onClose }: { items: LibItem[]; on
         <div className="lib-head">
           <span className="lib-title">Library</span>
           <span className="lib-count">{items.length}</span>
-          <button className="lib-x" aria-label="Close" onClick={onClose}>✕</button>
+          <button className="lib-x" aria-label="Close" onClick={onClose}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
         </div>
 
         <div className="lib-body">

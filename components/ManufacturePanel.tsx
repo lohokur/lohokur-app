@@ -48,7 +48,7 @@ export default function ManufacturePanel({
             <div className="mf-card-top">
               <div>
                 <div className="mf-name">{q.name}{q.recommended && <span className="mf-rec">recommended</span>}</div>
-                <div className="mf-loc">{q.location} · ★ {q.rating.toFixed(1)} · {q.leadDays}-day lead</div>
+                <div className="mf-loc">{q.location} · {q.rating.toFixed(1)}/5 · {q.leadDays}-day lead</div>
               </div>
             </div>
 
@@ -80,7 +80,7 @@ export default function ManufacturePanel({
                 sampleCost: q.sampleCost, unitCost: q.unitCost, moq: q.moq, leadDays: q.leadDays,
               })}
             >
-              {chosenId === q.id ? '✓ Selected' : 'Select manufacturer'}
+              {chosenId === q.id ? 'Selected' : 'Select manufacturer'}
             </button>
           </div>
         ))}

@@ -48,7 +48,6 @@ export default function PaywallModal() {
   return (
     <div className="pw-scrim" onClick={() => setOpen(false)}>
       <div className="pw-card" onClick={(e) => e.stopPropagation()}>
-        <div className="pw-bolt">⚡</div>
         <h2 className="pw-title">You’re out of generations</h2>
         <p className="pw-body">
           You’ve used all {capLabel} of your {tier === 'free' ? 'free' : `${tier} `}generations this month.

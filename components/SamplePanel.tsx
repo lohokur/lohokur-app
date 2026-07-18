@@ -57,14 +57,14 @@ export default function SamplePanel({
         {samplers.map((q) => (
           <div className={`mf-card${sample.samplerId === q.id ? ' chosen' : ''}`} key={q.id}>
             <div className="mf-name">{q.name}{q.recommended && <span className="mf-rec">fast</span>}</div>
-            <div className="mf-loc">{q.location} · ★ {q.rating.toFixed(1)} · {q.leadDays}-day sample lead</div>
+            <div className="mf-loc">{q.location} · {q.rating.toFixed(1)}/5 · {q.leadDays}-day sample lead</div>
             <div className="smpl-cost-row">
               <div className="smpl-cost"><span className="mf-cost-k">Sample</span><span className="mf-cost-v">{usd(q.sampleCost)}</span></div>
               <button
                 className={`mf-select${sample.samplerId === q.id ? ' on' : ''}`}
                 onClick={() => choose(q)}
               >
-                {sample.samplerId === q.id ? '✓ Selected' : 'Use this sampler'}
+                {sample.samplerId === q.id ? 'Selected' : 'Use this sampler'}
               </button>
             </div>
           </div>

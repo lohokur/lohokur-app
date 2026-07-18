@@ -269,7 +269,11 @@ export default function SketchStudio({
             <b>{Math.round(zoom * 100)}%</b>
             <button onClick={() => setZoom((z) => Math.min(4, z + 0.12))}>+</button>
           </span>
-          <button onClick={() => setFull((f) => !f)} title={full ? 'Exit full screen' : 'Full screen'}>{full ? '⤡' : '⛶'}</button>
+          <button onClick={() => setFull((f) => !f)} title={full ? 'Exit full screen' : 'Full screen'}>
+            {full
+              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3m13-5h-3a2 2 0 0 0-2 2v3" /></svg>
+              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" /></svg>}
+          </button>
           <button className="pe-done" onClick={() => { emit(); onClose(); }}>Done</button>
         </div>
       </div>
@@ -330,7 +334,7 @@ export default function SketchStudio({
                 <button onClick={dupLayer} title="Duplicate">⧉</button>
                 <button onClick={() => moveLayer(1)} title="Up">↑</button>
                 <button onClick={() => moveLayer(-1)} title="Down">↓</button>
-                <button onClick={delLayer} title="Delete">🗑</button>
+                <button onClick={delLayer} title="Delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13" /></svg></button>
               </span>
             </div>
             <label className="pe-slider sm"><span>Opacity</span><input type="range" min={0} max={100} value={Math.round(act.opacity * 100)} onChange={(e) => setLayerOpacity(+e.target.value)} /><b>{Math.round(act.opacity * 100)}</b></label>
@@ -340,7 +344,11 @@ export default function SketchStudio({
             <div className="pe-layer-list">
               {[...d.layers].reverse().map((l) => (
                 <div key={l.id} className={`pe-layer${l.id === d.activeId ? ' on' : ''}`} onClick={() => setActive(l.id)}>
-                  <button className="pe-eye" onClick={(e) => { e.stopPropagation(); toggleVis(l.id); }}>{l.visible ? '👁' : '·'}</button>
+                  <button className="pe-eye" onClick={(e) => { e.stopPropagation(); toggleVis(l.id); }} title={l.visible ? 'Hide' : 'Show'}>
+                    {l.visible
+                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a13 13 0 0 1-2.2 2.9M6.6 6.6A13 13 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 3.4-.6" /></svg>}
+                  </button>
                   <input className="pe-lname" value={l.name} onClick={(e) => e.stopPropagation()} onChange={(e) => rename(l.id, e.target.value)} />
                 </div>
               ))}

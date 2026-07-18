@@ -1079,10 +1079,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         {canvasReady && !booting && project && nodes.length === 0 && (
           <div className="freshstart">
             <div className="fs-hint">
-              <span className="fs-spark">✦</span> New here? Generate your first look in one click — or press <kbd>S</kbd> sketch · <kbd>V</kbd> visualise · <kbd>I</kbd> image
+              New here? Generate your first look in one click — or press <kbd>S</kbd> sketch · <kbd>V</kbd> visualise · <kbd>I</kbd> image
             </div>
             <div className="fs-pills">
-              <button className="fs-try" onClick={seedExample}>✨ Try an example</button>
+              <button className="fs-try" onClick={seedExample}>Try an example</button>
               <button onClick={() => seed(['image'])}>Start from an image</button>
               <button onClick={() => seed(['sketch'])}>Sketch a design</button>
               <button onClick={() => seed(['sketch', 'visualise'])}>Sketch → Visualise</button>
@@ -1152,7 +1152,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           <div className="pset" role="dialog" aria-label="Project settings" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pset-head">
               <span>Project settings</span>
-              <button className="pset-x" aria-label="Close" onClick={() => setSettingsOpen(false)}>✕</button>
+              <button className="pset-x" aria-label="Close" onClick={() => setSettingsOpen(false)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
             </div>
             <label className="pset-field">
               <span>Name</span>
