@@ -784,6 +784,42 @@ body {
 .mf-select:hover { background: rgba(169,240,208,.12); border-color: rgba(169,240,208,.4); color: var(--mint); }
 .mf-select.on { background: var(--mint); color: var(--ink); border-color: var(--mint); font-weight: 600; }
 
+/* ---------- retailer node + panel (reuses .mfpanel + .mf-card) ---------- */
+/* submission status pill — on the node and in the panel track */
+.rt-status { display: inline-block; margin-top: 6px; font-family: var(--mono); font-size: 8.5px; letter-spacing: .08em;
+  text-transform: uppercase; line-height: 1; padding: 3px 6px; border-radius: 5px;
+  border: 1px solid var(--glass-line); color: var(--muted); background: rgba(255,255,255,.04); }
+.rt-status.rt-pending  { color: #e7c66b; border-color: rgba(231,198,107,.4); background: rgba(231,198,107,.08); }
+.rt-status.rt-accepted,
+.rt-status.rt-listed   { color: var(--mint); border-color: rgba(169,240,208,.45); background: rgba(169,240,208,.08); }
+.rt-status.rt-rejected { color: #e79a9a; border-color: rgba(231,154,154,.4); background: rgba(231,154,154,.08); }
+
+/* curated / open marketplace tag on each retailer card */
+.rt-badge { margin-left: 7px; font-family: var(--mono); font-size: 8px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 5px; border-radius: 5px; border: 1px solid var(--glass-line); vertical-align: middle; }
+.rt-badge.curated { color: #e7c66b; border-color: rgba(231,198,107,.4); background: rgba(231,198,107,.07); }
+.rt-badge.open { color: var(--mint); border-color: rgba(169,240,208,.35); background: rgba(169,240,208,.06); }
+
+/* acceptance-odds meter */
+.rt-odds { display: flex; align-items: center; gap: 8px; margin: 4px 0 2px; }
+.rt-odds-k { font-family: var(--mono); font-size: 9px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.rt-odds-v { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+.rt-odds-bar { flex: 1; height: 4px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+.rt-odds-bar > span { display: block; height: 100%; background: var(--mint); border-radius: 3px; }
+
+/* live submission tracker at the top of the panel */
+.rt-track { border: 1px solid var(--glass-line); border-radius: 14px; padding: 14px 15px; margin: 0 0 14px;
+  background: rgba(255,255,255,.02); }
+.rt-track-pending  { border-color: rgba(231,198,107,.35); }
+.rt-track-accepted, .rt-track-listed { border-color: rgba(169,240,208,.4); }
+.rt-track-rejected { border-color: rgba(231,154,154,.35); }
+.rt-track-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.rt-track-name { font-size: 14px; color: var(--ink); }
+.rt-track-sub { font-family: var(--mono); font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+.rt-track-note { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 10px 0; }
+.rt-track-note.ok { color: var(--mint); }
+.rt-track-note.bad { color: #e79a9a; }
+
 /* ---------- create-sample panel (reuses .mfpanel + .mf-card) ---------- */
 .smpl-sec-h { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--mint);
   margin: 8px 0 2px; }

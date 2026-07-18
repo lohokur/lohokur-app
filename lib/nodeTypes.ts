@@ -8,6 +8,7 @@ export type StageKey =
   | 'techpack'
   | 'sample'
   | 'manufacture'
+  | 'retailer'
   | 'ship';
 
 export type Stage = { key: StageKey; label: string; hint: string };
@@ -26,6 +27,7 @@ export const STAGES: Stage[] = [
   { key: 'techpack', label: 'Techpack', hint: 'Spec · grading · BOM' },
   { key: 'sample', label: 'Create Sample', hint: 'One sample · ship to you' },
   { key: 'manufacture', label: 'Manufacture', hint: 'Vetted factory · bulk' },
+  { key: 'retailer', label: 'Retailer', hint: 'Stock it · online or in-store' },
   { key: 'ship', label: 'Ship', hint: '3PL or any address' },
 ];
 
@@ -44,6 +46,7 @@ export const STAGE_HOTKEYS: Record<string, StageKey> = {
   t: 'techpack',
   c: 'sample',
   m: 'manufacture',
+  r: 'retailer',
   h: 'ship',
 };
 
@@ -69,5 +72,6 @@ export const NEXT: Partial<Record<StageKey, StageKey[]>> = {
   pattern: ['techpack'],
   techpack: ['sample', 'manufacture'],
   sample: ['manufacture', 'ship'],
-  manufacture: ['ship'],
+  manufacture: ['ship', 'retailer'],
+  ship: ['retailer'],
 };

@@ -53,6 +53,14 @@ const ICONS: Record<StageKey, ReactNode> = {
       <path d="M3 21h18" />
     </>
   ), // factory
+  retailer: (
+    <>
+      <path d="M3 9l1.5-5h15L21 9" />
+      <path d="M4 9v11h16V9" />
+      <path d="M3 9a2.4 2.4 0 0 0 4.5 0 2.4 2.4 0 0 0 4.5 0 2.4 2.4 0 0 0 4.5 0 2.4 2.4 0 0 0 4.5 0" />
+      <path d="M9.5 20v-5h5v5" />
+    </>
+  ), // storefront / shop
   ship: (
     <>
       <path d="M1.5 7h10.5v9H1.5z" />

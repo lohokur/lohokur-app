@@ -14,7 +14,7 @@ export type Entitlements = {
 
 // Every node/stage is available to ALL tiers — plans differ only by project count
 // and monthly generation cap (the real cost lever). Stage keys mirror lib/nodeTypes.ts.
-const ALL_STAGES = ['sketch', 'visualise', 'studio', 'image', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'ship'];
+const ALL_STAGES = ['sketch', 'visualise', 'studio', 'image', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'retailer', 'ship'];
 
 export const TIERS: Record<Tier, Entitlements> = {
   free:   { tier: 'free',   label: 'Free',   projects: 1,        generations: 3,    stages: ALL_STAGES },

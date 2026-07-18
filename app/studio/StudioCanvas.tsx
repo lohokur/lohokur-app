@@ -21,6 +21,7 @@ import VisualiseNode from '@/components/VisualiseNode';
 import PatternNode from '@/components/PatternNode';
 import TechpackNode from '@/components/TechpackNode';
 import ManufactureNode from '@/components/ManufactureNode';
+import RetailerNode from '@/components/RetailerNode';
 import SampleNode from '@/components/SampleNode';
 import ExtractNode from '@/components/ExtractNode';
 import StudioNode from '@/components/StudioNode';
@@ -46,11 +47,13 @@ import TechpackPanel from '@/components/TechpackPanel';
 import ExtractPanel from '@/components/ExtractPanel';
 import PatternPanel from '@/components/PatternPanel';
 import ManufacturePanel from '@/components/ManufacturePanel';
+import RetailerPanel from '@/components/RetailerPanel';
 import SamplePanel from '@/components/SamplePanel';
 import { StudioContext } from '@/lib/studio-context';
 import { STAGES, NEXT, STAGE_HOTKEYS, type StageKey, type View } from '@/lib/nodeTypes';
 import type { Techpack } from '@/lib/techpack';
 import type { ChosenManufacturer } from '@/lib/manufacturers';
+import type { ChosenRetailer, CollectionBrief } from '@/lib/retailers';
 import type { Sample } from '@/lib/sample';
 import { getProject, saveProject, createProject } from '@/lib/client-store';
 import { useMe, notifyGenUsed } from '@/lib/use-billing';
@@ -68,10 +71,11 @@ const nodeTypes = {
   techpack: TechpackNode,
   sample: SampleNode,
   manufacture: ManufactureNode,
+  retailer: RetailerNode,
   group: GroupNode,
   note: NoteNode,
 };
-const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', studio: 'studio', image: 'image', extract: 'extract', pattern: 'pattern', techpack: 'techpack', sample: 'sample', manufacture: 'manufacture' };
+const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', studio: 'studio', image: 'image', extract: 'extract', pattern: 'pattern', techpack: 'techpack', sample: 'sample', manufacture: 'manufacture', retailer: 'retailer' };
 const edgeTypes = { wire: WireEdge };
 let counter = 1;
 
@@ -147,6 +151,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [editingExtract, setEditingExtract] = useState<string | null>(null);
   const [editingPattern, setEditingPattern] = useState<string | null>(null);
   const [editingManufacture, setEditingManufacture] = useState<string | null>(null);
+  const [editingRetailer, setEditingRetailer] = useState<string | null>(null);
   const [editingSample, setEditingSample] = useState<string | null>(null);
   const dirty = useRef(false);
   const loaded = useRef(false);
@@ -355,6 +360,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const openExtract = useCallback((id: string) => setEditingExtract(id), []);
   const openPattern = useCallback((id: string) => { if (!isOwner) return; setEditingPattern(id); }, [isOwner]);
   const openManufacture = useCallback((id: string) => setEditingManufacture(id), []);
+  const openRetailer = useCallback((id: string) => setEditingRetailer(id), []);
   const openSample = useCallback((id: string) => setEditingSample(id), []);
   const setNodeImage = useCallback(
     (id: string, image: string) =>
@@ -466,7 +472,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-      if (editing || editingTechpack || editingExtract || editingPattern || editingManufacture || editingSample || settingsOpen || libraryOpen) return;
+      if (editing || editingTechpack || editingExtract || editingPattern || editingManufacture || editingRetailer || editingSample || settingsOpen || libraryOpen) return;
       const k = e.key.toLowerCase();
       if (k === 'n') { e.preventDefault(); addNote(); return; }
       const type = STAGE_HOTKEYS[k];
@@ -476,7 +482,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [addNode, addNote, editing, editingTechpack, editingExtract, editingPattern, editingManufacture, editingSample, settingsOpen, libraryOpen]);
+  }, [addNode, addNote, editing, editingTechpack, editingExtract, editingPattern, editingManufacture, editingRetailer, editingSample, settingsOpen, libraryOpen]);
 
   // drop an image straight onto the canvas (paste / upload) as a ready Image node
   const addImageNode = useCallback((image: string) => {
@@ -862,8 +868,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     if (editingExtract && !ids.has(editingExtract)) setEditingExtract(null);
     if (editingPattern && !ids.has(editingPattern)) setEditingPattern(null);
     if (editingManufacture && !ids.has(editingManufacture)) setEditingManufacture(null);
+    if (editingRetailer && !ids.has(editingRetailer)) setEditingRetailer(null);
     if (editingSample && !ids.has(editingSample)) setEditingSample(null);
-  }, [nodes, editing, editingTechpack, editingExtract, editingPattern, editingManufacture, editingSample]);
+  }, [nodes, editing, editingTechpack, editingExtract, editingPattern, editingManufacture, editingRetailer, editingSample]);
 
   const undo = useCallback(() => {
     if (hIdx.current <= 0) return;
@@ -918,7 +925,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const libItems = useMemo<LibItem[]>(() => {
     const KIND: Record<string, string> = {
       sketch: 'Sketch', visualise: 'Visualisation', extract: 'Extract',
-      pattern: 'Pattern', techpack: 'Techpack', sample: 'Sample', manufacture: 'Manufacture',
+      pattern: 'Pattern', techpack: 'Techpack', sample: 'Sample', manufacture: 'Manufacture', retailer: 'Retailer',
     };
     const seen = new Set<string>();
     const out: LibItem[] = [];
@@ -989,6 +996,22 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     return (nodes.find((n) => n.id === editingManufacture)?.data as { manufacturer?: ChosenManufacturer } | undefined)?.manufacturer?.id;
   }, [editingManufacture, nodes]);
 
+  // What the Retailer node knows about the collection being submitted: identity
+  // from any tech pack in the flow, size + readiness from the pipeline's shape.
+  const editingRetailerBrief = useMemo<CollectionBrief>(() => {
+    const nodeType = (n: Node) => (n.data as { type?: string } | undefined)?.type;
+    const tp = nodes.map((n) => (n.data as { techpack?: Techpack } | undefined)?.techpack).find(Boolean);
+    const pieces = Math.max(1, nodes.filter((n) => nodeType(n) === 'sketch' || nodeType(n) === 'visualise').length);
+    const hasType = (t: string) => nodes.some((n) => nodeType(n) === t);
+    const polished = hasType('techpack') && hasType('manufacture');
+    return { name: tp?.name, category: tp?.category, pieces, polished };
+  }, [nodes]);
+
+  const editingRetailerChosen = useMemo<ChosenRetailer | undefined>(() => {
+    if (!editingRetailer) return undefined;
+    return (nodes.find((n) => n.id === editingRetailer)?.data as { retailer?: ChosenRetailer } | undefined)?.retailer;
+  }, [editingRetailer, nodes]);
+
   // Create Sample: the upstream tech pack, the stored sample, and whether a Ship node hangs off it
   const editingSampleTechpack = useMemo<Techpack | undefined>(() => {
     if (!editingSample) return undefined;
@@ -1018,7 +1041,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   }
 
   return (
-    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, openExtract, openPattern, openManufacture, openSample, setNodeImage, promptImage, renameGroup, setNoteText }}>
+    <StudioContext.Provider value={{ openSketch, visualise, openTechpack, openExtract, openPattern, openManufacture, openRetailer, openSample, setNodeImage, promptImage, renameGroup, setNoteText }}>
       <div className={`studio${booting || project === undefined ? ' emerging' : ''}`}>
         <DotField viewportRef={viewportRef} />
         <ReactFlow
@@ -1041,6 +1064,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
             else if (node.type === 'extract') openExtract(node.id);
             else if (node.type === 'pattern') openPattern(node.id);
             else if (node.type === 'manufacture') openManufacture(node.id);
+            else if (node.type === 'retailer') openRetailer(node.id);
             else if (node.type === 'sample') openSample(node.id);
           }}
           nodeTypes={nodeTypes}
@@ -1143,6 +1167,14 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           chosenId={editingManufactureChosen}
           onChoose={(m) => { if (editingManufacture) setNodeData(editingManufacture, { manufacturer: m }); }}
           onClose={() => setEditingManufacture(null)}
+        />
+
+        <RetailerPanel
+          open={!!editingRetailer}
+          brief={editingRetailerBrief}
+          chosen={editingRetailerChosen}
+          onChoose={(r) => { if (editingRetailer) setNodeData(editingRetailer, { retailer: r }); }}
+          onClose={() => setEditingRetailer(null)}
         />
 
         <SamplePanel
