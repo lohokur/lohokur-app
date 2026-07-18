@@ -75,6 +75,12 @@ const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise
 const edgeTypes = { wire: WireEdge };
 let counter = 1;
 
+// Stages not yet released to the public — shown as "coming soon" and blocked for
+// everyone except the owner account (who can still build/test them). Gated on the
+// exact email, NOT the isAdmin flag (several accounts carry isAdmin).
+const OWNER_EMAIL = 'lohokur123@gmail.com';
+const COMING_SOON_STAGES = new Set<StageKey>(['pattern', 'techpack']);
+
 // One-click first render: a fresh Image node pre-filled with a strong prompt so a
 // new user reaches their first generation in a single click.
 const EXAMPLE_PROMPTS = [
@@ -155,9 +161,15 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const me = useMe();
   const meRef = useRef(me);
   meRef.current = me; // always-fresh usage for proactive cap checks inside callbacks
+  const isOwner = me?.email === OWNER_EMAIL;
   const stageLocked = useCallback(
     (k: StageKey) => (me ? !me.entitlements.stages.includes(k) : false),
     [me],
+  );
+  // Unreleased stages: unavailable to everyone but the owner (shown as "coming soon").
+  const stageComingSoon = useCallback(
+    (k: StageKey) => COMING_SOON_STAGES.has(k) && !isOwner,
+    [isOwner],
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -339,9 +351,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   );
 
   const openSketch = useCallback((id: string) => setEditing(id), []);
-  const openTechpack = useCallback((id: string) => setEditingTechpack(id), []);
+  const openTechpack = useCallback((id: string) => { if (!isOwner) return; setEditingTechpack(id); }, [isOwner]);
   const openExtract = useCallback((id: string) => setEditingExtract(id), []);
-  const openPattern = useCallback((id: string) => setEditingPattern(id), []);
+  const openPattern = useCallback((id: string) => { if (!isOwner) return; setEditingPattern(id); }, [isOwner]);
   const openManufacture = useCallback((id: string) => setEditingManufacture(id), []);
   const openSample = useCallback((id: string) => setEditingSample(id), []);
   const setNodeImage = useCallback(
@@ -365,6 +377,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   const addNode = useCallback(
     (type: StageKey) => {
+      if (stageComingSoon(type)) return; // unreleased — dock shows "coming soon"
       if (stageLocked(type)) { router.push('/pricing'); return; } // gate premium stages
       const id = `${type}-${Date.now().toString(36)}-${counter++}`;
       const nt = CUSTOM[type] ?? 'stage';
@@ -397,7 +410,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       setTimeout(() => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, className: undefined } : n))), 1100);
       if (type === 'sketch') setEditing(id); // drop it on the canvas AND open the pad
     },
-    [setNodes, setEdges, stageLocked, router]
+    [setNodes, setEdges, stageComingSoon, stageLocked, router]
   );
 
   // drop a sticky note at the centre of the current view (not a pipeline stage — no gating)
@@ -414,6 +427,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   // seed an empty canvas with a starter chain (from the fresh-canvas quick-starts)
   const seed = useCallback((stages: StageKey[]) => {
+    stages = stages.filter((s) => !stageComingSoon(s)); // drop unreleased stages from starters
     if (!stages.length) return;
     const gap = 300;
     const ns: Node[] = [];
@@ -428,7 +442,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     setTimeout(() => setNodes((cur) => cur.map((n) => ({ ...n, className: undefined }))), 1100);
     setTimeout(() => rf.current?.fitView({ duration: 400, padding: 0.35 }), 80);
     if (stages[0] === 'sketch') setEditing(ns[0].id); // open the pad on the first sketch
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, stageComingSoon]);
 
   // Fresh Image node pre-filled with an example prompt + Generate coached — the
   // fastest path to a new user's first render (one click).
@@ -1069,7 +1083,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           </Panel>
 
           <Panel position="center-left">
-            <StudioDock stages={STAGES} onAdd={addNode} onNote={addNote} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={openProfile} isLocked={stageLocked} onLocked={() => router.push('/pricing')} />
+            <StudioDock stages={STAGES} onAdd={addNode} onNote={addNote} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={openProfile} isLocked={stageLocked} onLocked={() => router.push('/pricing')} comingSoon={stageComingSoon} />
           </Panel>
         </ReactFlow>
 

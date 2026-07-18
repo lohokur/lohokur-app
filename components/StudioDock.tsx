@@ -63,7 +63,7 @@ const ICONS: Record<StageKey, ReactNode> = {
   ), // truck
 };
 
-export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile, isLocked, onLocked }: {
+export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile, isLocked, onLocked, comingSoon }: {
   stages: Stage[];
   onAdd: (k: StageKey) => void;
   onNote: () => void;
@@ -71,22 +71,27 @@ export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile
   onProfile: () => void;
   isLocked?: (k: StageKey) => boolean;
   onLocked?: (k: StageKey) => void;
+  comingSoon?: (k: StageKey) => boolean;
 }) {
   return (
     <div className="dock" role="toolbar" aria-label="Add nodes">
       {stages.map((s) => {
-        const locked = isLocked?.(s.key) ?? false;
+        const soon = comingSoon?.(s.key) ?? false;
+        const locked = !soon && (isLocked?.(s.key) ?? false); // coming-soon takes precedence over the paywall lock
         return (
           <button
             key={s.key}
-            className={`dock-btn${locked ? ' locked' : ''}`}
-            onClick={() => (locked ? onLocked?.(s.key) : onAdd(s.key))}
-            aria-label={locked ? `${s.label} (upgrade to unlock)` : s.label}
-            title={locked ? `${s.label} — upgrade to unlock` : `${s.hint}${HOTKEY_FOR[s.key] ? `  ·  ${HOTKEY_FOR[s.key]!.toUpperCase()}` : ''}`}
+            className={`dock-btn${soon ? ' soon' : locked ? ' locked' : ''}`}
+            aria-disabled={soon || undefined}
+            onClick={() => { if (soon) return; locked ? onLocked?.(s.key) : onAdd(s.key); }}
+            aria-label={soon ? `${s.label} (coming soon)` : locked ? `${s.label} (upgrade to unlock)` : s.label}
+            title={soon ? `${s.label} — coming soon` : locked ? `${s.label} — upgrade to unlock` : `${s.hint}${HOTKEY_FOR[s.key] ? `  ·  ${HOTKEY_FOR[s.key]!.toUpperCase()}` : ''}`}
           >
             <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true">{ICONS[s.key]}</svg>
-            <span className="dock-label">{s.label}{HOTKEY_FOR[s.key] && <kbd className="dock-key">{HOTKEY_FOR[s.key]!.toUpperCase()}</kbd>}</span>
-            {locked && (
+            <span className="dock-label">{s.label}{!soon && HOTKEY_FOR[s.key] && <kbd className="dock-key">{HOTKEY_FOR[s.key]!.toUpperCase()}</kbd>}{soon && <span className="dock-soon-label">Coming soon</span>}</span>
+            {soon ? (
+              <span className="dock-soon" aria-hidden="true">Soon</span>
+            ) : locked && (
               <svg className="dock-lock" viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
               </svg>
