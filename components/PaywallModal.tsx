@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useMe, startCheckout } from '@/lib/use-billing';
+import { priceFor, TIERS } from '@/lib/entitlements';
 
 // Tier-aware "you're out of generations" moment. Any generation path can open it
-// via openPaywall() (lib/paywall). Upsells to the next tier with one tap.
-const UPSELL: Record<string, { plan: 'pro' | 'studio'; label: string; price: number; gens: number } | null> = {
-  free: { plan: 'pro', label: 'Pro', price: 30, gens: 200 },
-  pro: { plan: 'studio', label: 'Studio', price: 99, gens: 1000 },
+// via openPaywall() (lib/paywall). Upsells to the next tier with one tap; price
+// comes from the single pricing source in lib/entitlements.
+const NEXT_TIER: Record<string, 'pro' | 'studio' | null> = {
+  free: 'pro',
+  pro: 'studio',
   studio: null, // top self-serve tier — Enterprise is contact-sales only
 };
 
@@ -36,7 +38,10 @@ export default function PaywallModal() {
   const tier = me?.tier || 'free';
   const cap = me?.entitlements.generations ?? 3;
   const capLabel = cap === Infinity ? '∞' : cap.toLocaleString();
-  const upsell = UPSELL[tier] ?? null;
+  const nextTier = NEXT_TIER[tier] ?? null;
+  const upsell = nextTier
+    ? { plan: nextTier, label: TIERS[nextTier].label, price: priceFor(nextTier, 'monthly'), gens: TIERS[nextTier].generations }
+    : null;
 
   const upgrade = async () => {
     if (!upsell) return;

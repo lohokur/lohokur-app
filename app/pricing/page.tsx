@@ -3,16 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useMe, startCheckout } from '@/lib/use-billing';
-import { TIERS, type Tier } from '@/lib/entitlements';
-
-type Cadence = 'monthly' | 'annual';
-
-// Display pricing (marketing copy). MUST match the amounts on the Stripe Prices
-// you create — Stripe is the source of truth for what's actually charged.
-const PRICE: Record<Exclude<Tier, 'free'>, Record<Cadence, number>> = {
-  pro: { monthly: 30, annual: 300 },
-  studio: { monthly: 99, annual: 990 },
-};
+import { TIERS, priceFor, type Tier, type Cadence } from '@/lib/entitlements';
 
 const featuresFor = (tier: Tier): string[] => {
   const e = TIERS[tier];
@@ -58,7 +49,7 @@ export default function PricingPage() {
       <div className="pricing-grid">
         {order.map((tier) => {
           const paid = tier !== 'free';
-          const price = paid ? PRICE[tier as 'pro' | 'studio'][cadence] : 0;
+          const price = priceFor(tier, cadence) ?? 0;
           const isCurrent = current === tier;
           return (
             <div key={tier} className={`plan-card${tier === 'pro' ? ' featured' : ''}`}>

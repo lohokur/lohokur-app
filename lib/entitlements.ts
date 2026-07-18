@@ -22,6 +22,23 @@ export const TIERS: Record<Tier, Entitlements> = {
   studio: { tier: 'studio', label: 'Studio', projects: Infinity, generations: 1000, stages: ALL_STAGES },
 };
 
+export type Cadence = 'monthly' | 'annual';
+
+// Official display pricing (GBP). SINGLE SOURCE OF TRUTH for prices shown anywhere
+// in the store (pricing page, paywall, profile). `null` = not a paid/self-serve
+// price. MUST match the amounts on the live Stripe Prices in the STRIPE_PRICE_*
+// env vars — Stripe is what actually charges; this is only what we display.
+export const PRICING: Record<Tier, Record<Cadence, number | null>> = {
+  free:   { monthly: null, annual: null },
+  pro:    { monthly: 30,   annual: 300 },
+  studio: { monthly: 99,   annual: 990 },
+};
+
+// Monthly (or given cadence) price for a tier, or null if it has none.
+export function priceFor(tier?: string | null, cadence: Cadence = 'monthly'): number | null {
+  return PRICING[(tier as Tier)]?.[cadence] ?? null;
+}
+
 export const PG_INT_MAX = 2147483647; // Infinity → this when passing a cap to Postgres
 
 export function entitlementsFor(tier?: string | null): Entitlements {

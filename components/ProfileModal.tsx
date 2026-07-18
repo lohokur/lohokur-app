@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMe, openPortal } from '@/lib/use-billing';
+import { priceFor } from '@/lib/entitlements';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
 // Full settings modal (Flora-style): left nav + rich panels. Opened via
@@ -11,8 +12,6 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 // leaves you on the canvas — never the project dashboard.
 
 type Section = 'profile' | 'billing' | 'usage';
-
-const PRICE: Record<string, number | null> = { free: null, pro: 30, studio: 99 };
 
 export default function ProfileModal() {
   const me = useMe();
@@ -43,7 +42,7 @@ export default function ProfileModal() {
   const finite = cap !== Infinity;
   const pct = finite && cap ? Math.min(100, Math.round((used / cap) * 100)) : 0;
   const remaining = finite ? Math.max(0, cap - used) : Infinity;
-  const price = PRICE[me?.tier ?? 'free'];
+  const price = priceFor(me?.tier, 'monthly');
   const email = me?.email ?? '—';
   const initial = (me?.email?.[0] ?? '?').toUpperCase();
   const periodEnd = me?.currentPeriodEnd ? new Date(me.currentPeriodEnd).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
