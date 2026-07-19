@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
+import { ActionArrow } from '@/components/ActionArrow';
 
 // Image node: upload a file, paste, or type a prompt to generate an image.
 export default function ImageNode({ id, data, selected }: NodeProps) {
@@ -47,7 +48,7 @@ export default function ImageNode({ id, data, selected }: NodeProps) {
           rows={2}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
         />
-        <button className={`sn-go${coach ? ' coach' : ''}`} disabled={d.loading || !text.trim()} onClick={submit}>{d.loading ? '…' : 'Generate'}</button>
+        <button className={`sn-act nodrag${coach ? ' coach' : ''}${d.loading ? ' busy' : ''}`} disabled={d.loading || !text.trim()} onClick={submit} title="Generate" aria-label="Generate">{d.loading ? <span className="sn-spin" /> : <ActionArrow />}</button>
       </div>
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>

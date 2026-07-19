@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Handle, Position, useReactFlow, useNodeConnections, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
+import { ActionArrow } from '@/components/ActionArrow';
 
 type Data = {
   image?: string;                     // mirror of the currently shown render (for downstream nodes)
@@ -59,11 +60,13 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
       <div className="sn-head">
         <span>Visualise</span>
         <button
-          className="sn-edit nodrag"
+          className={`sn-act nodrag${d.busy ? ' busy' : ''}`}
           onClick={(e) => { e.stopPropagation(); visualise(id); }}
           disabled={!!d.busy || !inputs.length}
+          title={(d.preview && ids.includes(d.preview)) ? 'Re-render this input' : 'Visualise'}
+          aria-label="Visualise"
         >
-          {d.busy ? '…' : (d.preview && ids.includes(d.preview)) ? 'redo' : Object.keys(byInput).length ? 'visualise' : 'run'}
+          {d.busy ? <span className="sn-spin" /> : <ActionArrow />}
         </button>
       </div>
 

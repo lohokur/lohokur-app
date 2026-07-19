@@ -488,6 +488,31 @@ body {
   50% { box-shadow: 0 0 0 6px rgba(169,240,208,0); }
 }
 
+/* ---------- node action button: shared upload/send symbol (Flora-style) ---------- */
+.sn-act {
+  width: 30px; height: 30px; border-radius: 50%; padding: 0; flex: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.06); border: 1px solid var(--glass-line); color: var(--mint);
+  opacity: .55; transition: opacity .16s ease, background .16s, color .16s, border-color .16s, transform .1s;
+}
+.sn-act svg { width: 15px; height: 15px; display: block; }
+/* reveal / emphasise on hover — like the Flora reference */
+.stage-node:hover .sn-act, .stage-node.selected .sn-act, .sn-act.busy, .sn-act:focus-visible { opacity: 1; }
+.sn-act:hover:not(:disabled) { background: var(--mint); color: var(--ink); border-color: var(--mint); }
+.sn-act:active:not(:disabled) { transform: scale(.9); }
+.sn-act:disabled { opacity: 0; cursor: default; }
+.stage-node:hover .sn-act:disabled { opacity: .3; color: var(--muted); }
+.sn-head .sn-act { width: 28px; height: 28px; }
+.sn-prompt .sn-act { align-self: flex-end; }
+.sn-act.coach { opacity: 1; animation: sn-act-coach 1.5s ease-in-out infinite; }
+@keyframes sn-act-coach {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(169,240,208,.5); }
+  50% { box-shadow: 0 0 0 6px rgba(169,240,208,0); }
+}
+.sn-spin { width: 14px; height: 14px; border-radius: 50%; box-sizing: border-box;
+  border: 2px solid rgba(169,240,208,.25); border-top-color: var(--mint); animation: sn-actspin .7s linear infinite; }
+@keyframes sn-actspin { to { transform: rotate(360deg); } }
+
 /* ---------- sketch studio (full-screen photoshop-style editor) ---------- */
 /* docked card by default; .full expands to the whole screen */
 .peditor { position: fixed; top: 0; right: 0; height: 100dvh; width: min(96vw, 560px); z-index: 60;

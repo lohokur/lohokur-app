@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
+import { ActionArrow } from '@/components/ActionArrow';
 
 // Brand studio: plug in a visualisation (or image), prompt it into anything —
 // billboards, editorial shoots, campaign scenes — to help marketers brand the product.
@@ -33,7 +34,7 @@ export default function StudioNode({ id, data, selected }: NodeProps) {
           rows={2}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); } }}
         />
-        <button className="sn-go" disabled={d.loading || !text.trim()} onClick={submit}>{d.loading ? '…' : 'Submit'}</button>
+        <button className={`sn-act nodrag${d.loading ? ' busy' : ''}`} disabled={d.loading || !text.trim()} onClick={submit} title="Submit" aria-label="Submit">{d.loading ? <span className="sn-spin" /> : <ActionArrow />}</button>
       </div>
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>
