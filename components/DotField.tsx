@@ -64,7 +64,7 @@ export default function DotField({ viewportRef }: { viewportRef: MutableRefObjec
               }
             }
             const a = 0.3 + e * 0.45;
-            const r = (0.95 + e * 0.5) * dpr;
+            const r = (0.95 + e * 0.5) * dpr * Math.min(1.4, Math.max(0.4, zoom));
             ctx.beginPath();
             ctx.fillStyle = `rgba(196,245,220,${a.toFixed(3)})`;
             ctx.arc(px, py, r, 0, 6.2832);
