@@ -85,15 +85,6 @@ let counter = 1;
 const OWNER_EMAIL = 'lohokur123@gmail.com';
 const COMING_SOON_STAGES = new Set<StageKey>(['pattern', 'techpack', 'retailer']);
 
-// One-click first render: a fresh Image node pre-filled with a strong prompt so a
-// new user reaches their first generation in a single click.
-const EXAMPLE_PROMPTS = [
-  'a cropped moto jacket in cracked oxblood leather with matte silver hardware, on a plain studio backdrop, editorial fashion photo',
-  'oversized techwear cargo pants in washed sage nylon, taped seams and utility straps, clean studio product shot',
-  'a sculptural asymmetric wool coat in charcoal with an exaggerated collar, soft studio light, lookbook photo',
-  'a sheer organza slip dress in pale silver with raw hems, floating on a dark studio backdrop, high-fashion photo',
-];
-
 async function urlToDataUrl(url: string): Promise<string> {
   const r = await fetch(url);
   const b = await r.blob();
@@ -463,17 +454,6 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     setTimeout(() => rf.current?.fitView({ duration: 400, padding: 0.35 }), 80);
     if (stages[0] === 'sketch') setEditing(ns[0].id); // open the pad on the first sketch
   }, [setNodes, setEdges, stageComingSoon]);
-
-  // Fresh Image node pre-filled with an example prompt + Generate coached — the
-  // fastest path to a new user's first render (one click).
-  const seedExample = useCallback(() => {
-    const prompt = EXAMPLE_PROMPTS[Math.floor(Math.random() * EXAMPLE_PROMPTS.length)];
-    const id = `image-${Date.now().toString(36)}-${counter++}`;
-    setNodes([{ id, type: 'image', position: { x: 220, y: 170 }, data: { type: 'image', prompt, coachGenerate: true }, selected: true, className: 'spawn-flash' }]);
-    setEdges([]);
-    setTimeout(() => setNodes((cur) => cur.map((n) => ({ ...n, className: undefined }))), 1100);
-    setTimeout(() => rf.current?.fitView({ duration: 400, padding: 0.5 }), 80);
-  }, [setNodes, setEdges]);
 
   const setNoteText = useCallback(
     (id: string, text: string) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, text } } : n))),
@@ -1137,14 +1117,12 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         {canvasReady && !booting && project && nodes.length === 0 && (
           <div className="freshstart">
             <div className="fs-hint">
-              New here? Generate your first look in one click — or press <kbd>S</kbd> sketch · <kbd>V</kbd> visualise · <kbd>I</kbd> image
+              New here? Start with a flow — or press <kbd>S</kbd> sketch · <kbd>V</kbd> visualise · <kbd>I</kbd> image
             </div>
             <div className="fs-pills">
-              <button className="fs-try" onClick={seedExample}>Try an example</button>
-              <button onClick={() => seed(['image'])}>Start from an image</button>
-              <button onClick={() => seed(['sketch'])}>Sketch a design</button>
               <button onClick={() => seed(['sketch', 'visualise'])}>Sketch → Visualise</button>
               <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'ship'])}>Sketch → physical product</button>
+              <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack', 'manufacture', 'ship'])}>Sketch → bulk order</button>
             </div>
           </div>
         )}
