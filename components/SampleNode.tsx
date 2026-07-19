@@ -2,6 +2,7 @@
 
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
+import { OpenIcon } from '@/components/ActionArrow';
 import { type Sample, statusLabel } from '@/lib/sample';
 
 export default function SampleNode({ id, data, selected }: NodeProps) {
@@ -14,9 +15,7 @@ export default function SampleNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} className="sn-handle" />
       <div className="sn-head">
         <span>Create Sample</span>
-        <button className="sn-edit nodrag" onClick={(e) => { e.stopPropagation(); openSample(id); }}>
-          {configured ? 'edit' : 'set up'}
-        </button>
+        <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); openSample(id); }} title={configured ? 'Edit sample' : 'Set up sample'} aria-label={configured ? 'Edit sample' : 'Set up sample'}><OpenIcon /></button>
       </div>
       <div className="sn-body" onDoubleClick={() => openSample(id)}>
         {configured ? (

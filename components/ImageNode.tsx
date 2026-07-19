@@ -28,7 +28,7 @@ export default function ImageNode({ id, data, selected }: NodeProps) {
     <div className={`stage-node image-node${selected ? ' selected' : ''}`}>
       <div className="sn-head">
         <span>Image</span>
-        <button className="sn-edit nodrag" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}>upload</button>
+        <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }} title="Upload an image" aria-label="Upload an image"><ActionArrow /></button>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
       </div>
       <div className="sn-draw">

@@ -2,6 +2,7 @@
 
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
+import { OpenIcon } from '@/components/ActionArrow';
 import { VIEWS, type View } from '@/lib/nodeTypes';
 
 export default function SketchNode({ id, data, selected }: NodeProps) {
@@ -14,9 +15,7 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} className="sn-handle" />
       <div className="sn-head">
         <span>Sketch</span>
-        <button className="sn-edit nodrag" onClick={(e) => { e.stopPropagation(); openSketch(id); }}>
-          {front ? 'edit' : 'draw'}
-        </button>
+        <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); openSketch(id); }} title={front ? 'Edit sketch' : 'Draw'} aria-label={front ? 'Edit sketch' : 'Draw'}><OpenIcon /></button>
       </div>
       <div className="sn-draw">
         {front ? <img src={front} alt="Sketch" draggable={false} /> : <span className="sn-empty">draw your idea</span>}

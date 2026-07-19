@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
+import { ActionArrow, OpenIcon } from '@/components/ActionArrow';
 
 export default function PatternNode({ id, data, selected }: NodeProps) {
   const { setNodeImage, openPattern } = useStudio();
@@ -26,18 +27,8 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
       <div className="sn-head">
         <span>Pattern maker</span>
         <div className="sn-actions">
-          <button
-            className="sn-edit nodrag"
-            onClick={(e) => { e.stopPropagation(); openPattern(id); }}
-          >
-            outline
-          </button>
-          <button
-            className="sn-edit nodrag"
-            onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-          >
-            {image ? 'replace' : 'upload'}
-          </button>
+          <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); openPattern(id); }} title="Open pattern maker" aria-label="Open pattern maker"><OpenIcon /></button>
+          <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }} title={image ? 'Replace image' : 'Upload an image'} aria-label={image ? 'Replace image' : 'Upload an image'}><ActionArrow /></button>
         </div>
         <input
           ref={fileRef}

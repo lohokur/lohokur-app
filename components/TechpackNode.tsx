@@ -2,6 +2,7 @@
 
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
+import { OpenIcon } from '@/components/ActionArrow';
 import type { Techpack } from '@/lib/techpack';
 
 export default function TechpackNode({ id, data, selected }: NodeProps) {
@@ -13,9 +14,7 @@ export default function TechpackNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} className="sn-handle" />
       <div className="sn-head">
         <span>Techpack</span>
-        <button className="sn-edit nodrag" onClick={(e) => { e.stopPropagation(); openTechpack(id); }}>
-          {tp ? 'edit' : 'open'}
-        </button>
+        <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); openTechpack(id); }} title={tp ? 'Edit tech pack' : 'Open tech pack'} aria-label={tp ? 'Edit tech pack' : 'Open tech pack'}><OpenIcon /></button>
       </div>
       <div className="sn-body" onDoubleClick={() => openTechpack(id)}>
         {tp ? (

@@ -2,6 +2,7 @@
 
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
+import { OpenIcon } from '@/components/ActionArrow';
 import { type ChosenRetailer, statusLabel } from '@/lib/retailers';
 
 export default function RetailerNode({ id, data, selected }: NodeProps) {
@@ -14,9 +15,7 @@ export default function RetailerNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} className="sn-handle" />
       <div className="sn-head">
         <span>Retailer</span>
-        <button className="sn-edit nodrag" onClick={(e) => { e.stopPropagation(); openRetailer(id); }}>
-          {r ? 'change' : 'find'}
-        </button>
+        <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); openRetailer(id); }} title={r ? 'Change retailer' : 'Find a retailer'} aria-label={r ? 'Change retailer' : 'Find a retailer'}><OpenIcon /></button>
       </div>
       <div className="sn-body" onDoubleClick={() => openRetailer(id)}>
         {r ? (
