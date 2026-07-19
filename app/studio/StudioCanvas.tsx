@@ -83,7 +83,7 @@ let counter = 1;
 // everyone except the owner account (who can still build/test them). Gated on the
 // exact email, NOT the isAdmin flag (several accounts carry isAdmin).
 const OWNER_EMAIL = 'lohokur123@gmail.com';
-const COMING_SOON_STAGES = new Set<StageKey>(['pattern', 'techpack']);
+const COMING_SOON_STAGES = new Set<StageKey>(['pattern', 'techpack', 'retailer']);
 
 // One-click first render: a fresh Image node pre-filled with a strong prompt so a
 // new user reaches their first generation in a single click.
@@ -360,7 +360,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const openExtract = useCallback((id: string) => setEditingExtract(id), []);
   const openPattern = useCallback((id: string) => { if (!isOwner) return; setEditingPattern(id); }, [isOwner]);
   const openManufacture = useCallback((id: string) => setEditingManufacture(id), []);
-  const openRetailer = useCallback((id: string) => setEditingRetailer(id), []);
+  const openRetailer = useCallback((id: string) => { if (!isOwner) return; setEditingRetailer(id); }, [isOwner]);
   const openSample = useCallback((id: string) => setEditingSample(id), []);
   const setNodeImage = useCallback(
     (id: string, image: string) =>
