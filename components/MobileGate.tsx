@@ -5,7 +5,7 @@ export default function MobileGate() {
   return (
     <div className="mobile-gate" role="dialog" aria-modal="true" aria-label="Open LOHO KUR on desktop">
       <div className="mg-card">
-        <span className="mg-mark">LOHO KUR</span>
+        <img className="mg-logo" src="/lk-logo.png" alt="LOHO KUR" draggable={false} />
         <svg className="mg-ic" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="2.5" y="4" width="19" height="12.5" rx="1.5" />
           <path d="M9 20h6M12 16.5V20" />

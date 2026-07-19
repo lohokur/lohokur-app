@@ -33,7 +33,7 @@ body {
   }
 }
 .mg-card { max-width: 330px; text-align: center; display: flex; flex-direction: column; align-items: center; }
-.mg-mark { font-family: var(--mono); letter-spacing: .22em; font-size: 12px; text-transform: uppercase; color: var(--mint); }
+.mg-logo { height: 24px; width: auto; display: block; filter: invert(1) drop-shadow(0 1px 8px rgba(0,0,0,.55)); }
 .mg-ic { width: 46px; height: 46px; margin: 28px 0 22px; fill: none; stroke: var(--fg); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .mg-h { font-size: 24px; font-weight: 600; color: var(--fg); margin: 0 0 12px; letter-spacing: -.01em; }
 .mg-p { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 22px; }
