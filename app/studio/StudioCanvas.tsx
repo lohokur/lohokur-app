@@ -162,6 +162,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [canvasReady, setCanvasReady] = useState(false); // ReactFlow onInit fired
   const rf = useRef<ReactFlowInstance | null>(null); // React Flow instance (for viewport math)
   const viewportRef = useRef({ x: 0, y: 0, zoom: 1 }); // live React Flow viewport for the dot field
+  const savedViewport = useRef<{ x: number; y: number; zoom: number } | undefined>(undefined); // last view, restored on load
+  const vpApplied = useRef(false); // have we set the initial viewport yet?
+  const vpSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce viewport saves
   const router = useRouter();
   const me = useMe();
   const meRef = useRef(me);
@@ -202,6 +205,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       setProject(p);
       setDataProg(0.5); // project fetched
       if (p) {
+        savedViewport.current = (p.flow as { viewport?: { x: number; y: number; zoom: number } } | undefined)?.viewport;
         const ns = (p.flow?.nodes as Node[]) ?? [];
         const es = ((p.flow?.edges as Edge[]) ?? []).map((e) => ({ ...e, type: 'wire' as const, animated: false }));
         // Paint shaped skeleton placeholders at each node's spot right away, then
@@ -248,6 +252,16 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     const bail = setTimeout(() => { if (!cancelled) { setDataProg(0.9); setCanvasReady(true); } }, 6000);
     return () => { cancelled = true; clearTimeout(bail); };
   }, [projectId, setNodes, setEdges, syncHist]);
+
+  // Restore the last view the user had (pan + zoom) once the canvas is ready.
+  // No saved viewport (new or older project) → fall back to fitting the nodes.
+  useEffect(() => {
+    if (vpApplied.current || !canvasReady || !rf.current || project === undefined) return;
+    vpApplied.current = true;
+    const svp = savedViewport.current;
+    if (svp) rf.current.setViewport(svp);
+    else rf.current.fitView({ padding: 0.3 });
+  }, [canvasReady, project]);
 
   // live refs for validation / lookups (avoids stale closures)
   const nodesRef = useRef<Node[]>([]);
@@ -810,7 +824,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     // clear dirty BEFORE the await; re-set it on failure so nothing is lost
     dirty.current = false;
     try {
-      await saveProject(projectId, { flow: { nodes, edges } });
+      await saveProject(projectId, { flow: { nodes, edges, viewport: viewportRef.current } });
       if (nodes.length > 0) loadedNonEmpty.current = true;
     } catch (e) {
       dirty.current = true; // failed — keep dirty so it retries
@@ -1052,6 +1066,13 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onConnect={onConnect}
           onInit={(inst) => { rf.current = inst; viewportRef.current = inst.getViewport(); setCanvasReady(true); }}
           onMove={(_, vp) => { viewportRef.current = vp; }}
+          onMoveEnd={(_, vp) => {
+            viewportRef.current = vp;
+            if (!loaded.current) return;
+            dirty.current = true; // remember where the user left off
+            clearTimeout(vpSaveTimer.current);
+            vpSaveTimer.current = setTimeout(() => void saveRef.current?.(), 700);
+          }}
           isValidConnection={isValidConnection}
           connectionRadius={90}
           onNodeContextMenu={onNodeContextMenu}
@@ -1070,7 +1091,6 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode="dark"
-          fitView
           minZoom={0.1}                  /* zoom out much further than the 0.5 default */
           maxZoom={2.5}
           snapToGrid

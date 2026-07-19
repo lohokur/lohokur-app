@@ -1,5 +1,5 @@
 // Shared types — safe to import from both server and client (no node built-ins).
-export type Flow = { nodes: unknown[]; edges: unknown[] };
+export type Flow = { nodes: unknown[]; edges: unknown[]; viewport?: { x: number; y: number; zoom: number } };
 
 export type Project = {
   id: string;
