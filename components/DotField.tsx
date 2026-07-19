@@ -63,8 +63,8 @@ export default function DotField({ viewportRef }: { viewportRef: MutableRefObjec
                 if (charge > 0) { e = Math.min(1, e + charge); energy.set(key, e); }
               }
             }
-            const a = 0.15 + e * 0.45;
-            const r = (0.7 + e * 0.55) * dpr;
+            const a = 0.3 + e * 0.45;
+            const r = (0.95 + e * 0.5) * dpr;
             ctx.beginPath();
             ctx.fillStyle = `rgba(196,245,220,${a.toFixed(3)})`;
             ctx.arc(px, py, r, 0, 6.2832);
