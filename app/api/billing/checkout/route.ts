@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'sign in required' }, { status: 401 });
 
   const { plan, cadence } = await req.json().catch(() => ({}));
-  if ((plan !== 'pro' && plan !== 'studio') || (cadence !== 'monthly' && cadence !== 'annual')) {
+  if ((plan !== 'studio' && plan !== 'pro' && plan !== 'brand') || (cadence !== 'monthly' && cadence !== 'annual')) {
     return NextResponse.json({ error: 'invalid plan' }, { status: 400 });
   }
   const price = priceId(plan, cadence as Cadence);

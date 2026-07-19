@@ -8,10 +8,11 @@ import { priceFor, TIERS } from '@/lib/entitlements';
 // Tier-aware "you're out of generations" moment. Any generation path can open it
 // via openPaywall() (lib/paywall). Upsells to the next tier with one tap; price
 // comes from the single pricing source in lib/entitlements.
-const NEXT_TIER: Record<string, 'pro' | 'studio' | null> = {
-  free: 'pro',
-  pro: 'studio',
-  studio: null, // top self-serve tier — Enterprise is contact-sales only
+const NEXT_TIER: Record<string, 'studio' | 'pro' | 'brand' | null> = {
+  free: 'studio',
+  studio: 'pro',
+  pro: 'brand',
+  brand: null, // top self-serve tier
 };
 
 export default function PaywallModal() {

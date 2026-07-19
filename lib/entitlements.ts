@@ -1,37 +1,41 @@
 // Tier → limits. This is the single source of truth for what each plan unlocks.
+// Mirrors lohokur.com/pricing (Free / Studio / Pro / Brand).
 // (The project-count numbers are mirrored in supabase/migrations/0001_billing.sql
 //  `project_limit()` for server-side enforcement — keep them in sync.)
 
-export type Tier = 'free' | 'pro' | 'studio';
+export type Tier = 'free' | 'studio' | 'pro' | 'brand';
 
 export type Entitlements = {
   tier: Tier;
   label: string;
   projects: number; // max projects (Infinity = unlimited)
-  generations: number; // AI generations per calendar month
+  generations: number; // AI credits per calendar month
+  seats: number; // included seats
   stages: string[]; // node/stage types this tier can use
 };
 
-// Every node/stage is available to ALL tiers — plans differ only by project count
-// and monthly generation cap (the real cost lever). Stage keys mirror lib/nodeTypes.ts.
+// Every node/stage is available to ALL tiers — plans differ by credits, seats and
+// project count (the real cost levers). Stage keys mirror lib/nodeTypes.ts.
 const ALL_STAGES = ['sketch', 'visualise', 'studio', 'image', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'retailer', 'ship'];
 
 export const TIERS: Record<Tier, Entitlements> = {
-  free:   { tier: 'free',   label: 'Free',   projects: 1,        generations: 3,    stages: ALL_STAGES },
-  pro:    { tier: 'pro',    label: 'Pro',    projects: 10,       generations: 200,  stages: ALL_STAGES },
-  studio: { tier: 'studio', label: 'Studio', projects: Infinity, generations: 1000, stages: ALL_STAGES },
+  free:   { tier: 'free',   label: 'Free',   projects: 3,        generations: 20,    seats: 1,  stages: ALL_STAGES },
+  studio: { tier: 'studio', label: 'Studio', projects: Infinity, generations: 1000,  seats: 1,  stages: ALL_STAGES },
+  pro:    { tier: 'pro',    label: 'Pro',    projects: Infinity, generations: 3000,  seats: 8,  stages: ALL_STAGES },
+  brand:  { tier: 'brand',  label: 'Brand',  projects: Infinity, generations: 10000, seats: 15, stages: ALL_STAGES },
 };
 
 export type Cadence = 'monthly' | 'annual';
 
 // Official display pricing (GBP). SINGLE SOURCE OF TRUTH for prices shown anywhere
-// in the store (pricing page, paywall, profile). `null` = not a paid/self-serve
-// price. MUST match the amounts on the live Stripe Prices in the STRIPE_PRICE_*
-// env vars — Stripe is what actually charges; this is only what we display.
+// in the store (pricing page, paywall, profile). Annual = −20% (2.4 months free).
+// `null` = not a paid/self-serve price. MUST match the amounts on the live Stripe
+// Prices in the STRIPE_PRICE_* env vars — Stripe is what actually charges.
 export const PRICING: Record<Tier, Record<Cadence, number | null>> = {
   free:   { monthly: null, annual: null },
-  pro:    { monthly: 30,   annual: 300 },
-  studio: { monthly: 99,   annual: 990 },
+  studio: { monthly: 29,   annual: 278 },
+  pro:    { monthly: 59,   annual: 566 },
+  brand:  { monthly: 199,  annual: 1910 },
 };
 
 // Monthly (or given cadence) price for a tier, or null if it has none.
