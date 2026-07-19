@@ -12,7 +12,6 @@ export default function MobileGate() {
         </svg>
         <h1 className="mg-h">Best on desktop</h1>
         <p className="mg-p">The canvas needs room to work. Open LOHO KUR on a laptop or desktop to design — idea to shipment.</p>
-        <span className="mg-url">lohokur-app.vercel.app</span>
       </div>
     </div>
   );
