@@ -23,6 +23,22 @@ body {
   margin: 0;
 }
 
+/* ---------- mobile gate (canvas is a desktop tool) ---------- */
+.mobile-gate { display: none; }
+@media (max-width: 820px), (pointer: coarse) and (max-width: 1024px) {
+  .mobile-gate {
+    display: flex; align-items: center; justify-content: center;
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--ink); padding: 30px;
+  }
+}
+.mg-card { max-width: 330px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.mg-mark { font-family: var(--mono); letter-spacing: .22em; font-size: 12px; text-transform: uppercase; color: var(--mint); }
+.mg-ic { width: 46px; height: 46px; margin: 28px 0 22px; fill: none; stroke: var(--fg); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mg-h { font-size: 24px; font-weight: 600; color: var(--fg); margin: 0 0 12px; letter-spacing: -.01em; }
+.mg-p { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 22px; }
+.mg-url { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--glass-line); border-radius: 8px; padding: 8px 13px; }
+
 /* ---------- home / project list ---------- */
 .home { max-width: 960px; margin: 0 auto; padding: 34px 26px 80px; }
 .home-head { display: flex; align-items: center; justify-content: space-between; }
