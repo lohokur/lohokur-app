@@ -455,7 +455,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   // seed an empty canvas with a starter chain (from the fresh-canvas quick-starts)
   const seed = useCallback((stages: StageKey[]) => {
-    stages = stages.filter((s) => !stageComingSoon(s) && !stageLocked(s)); // keep only stages this plan can use
+    stages = stages.filter((s) => !stageComingSoon(s)); // spawn the whole chain — locked nodes gate on interaction
     if (!stages.length) return;
     const gap = 300;
     const ns: Node[] = [];
@@ -470,7 +470,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     setTimeout(() => setNodes((cur) => cur.map((n) => ({ ...n, className: undefined }))), 1100);
     setTimeout(() => rf.current?.fitView({ duration: 400, padding: 0.35 }), 80);
     if (stages[0] === 'sketch') setEditing(ns[0].id); // open the pad on the first sketch
-  }, [setNodes, setEdges, stageComingSoon, stageLocked]);
+  }, [setNodes, setEdges, stageComingSoon]);
 
   const setNoteText = useCallback(
     (id: string, text: string) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, text } } : n))),
