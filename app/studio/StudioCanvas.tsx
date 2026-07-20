@@ -1145,7 +1145,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
             </div>
             <div className="fs-pills">
               <button onClick={() => seed(['sketch', 'visualise'])}>Sketch → Visualise</button>
-              <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'ship'])}>Sketch → physical product</button>
+              <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack', 'sample'])}>Sketch → physical product</button>
               <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack', 'manufacture', 'ship'])}>Sketch → bulk order</button>
             </div>
           </div>
