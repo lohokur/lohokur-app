@@ -37,11 +37,9 @@ export default function PaywallModal() {
   if (!open) return null;
 
   const tier = me?.tier || 'free';
-  const cap = me?.entitlements.generations ?? 3;
-  const capLabel = cap === Infinity ? '∞' : cap.toLocaleString();
   const nextTier = NEXT_TIER[tier] ?? null;
   const upsell = nextTier
-    ? { plan: nextTier, label: TIERS[nextTier].label, price: priceFor(nextTier, 'monthly'), gens: TIERS[nextTier].generations }
+    ? { plan: nextTier, label: TIERS[nextTier].label, price: priceFor(nextTier, 'monthly') }
     : null;
 
   const upgrade = async () => {
@@ -54,12 +52,12 @@ export default function PaywallModal() {
   return (
     <div className="pw-scrim" onClick={() => setOpen(false)}>
       <div className="pw-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="pw-title">You’re out of generations</h2>
+        <h2 className="pw-title">You’re out of ink</h2>
         <p className="pw-body">
-          You’ve used all {capLabel} of your {tier === 'free' ? 'free' : `${tier} `}generations this month.
+          Your ink refills on the 1st.
           {upsell
-            ? ` Upgrade to ${upsell.label} for ${upsell.gens.toLocaleString()} a month and keep creating.`
-            : ' Your generations reset on the 1st.'}
+            ? ` Or upgrade to ${upsell.label} for more each month and keep creating now.`
+            : ''}
         </p>
 
         {err && <p className="pw-err">{err}</p>}

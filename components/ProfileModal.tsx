@@ -96,7 +96,7 @@ export default function ProfileModal() {
               <div className="set-card">
                 <div className="set-row"><span className="set-k">Email</span><span className="set-v">{email}</span></div>
                 <div className="set-row"><span className="set-k">Plan</span><span className="set-v">{ent?.label ?? '—'}</span></div>
-                <div className="set-row"><span className="set-k">Generations left this month</span><span className="set-v">{remaining === Infinity ? 'Unlimited' : `${remaining} of ${cap}`}</span></div>
+                <div className="set-row"><span className="set-k">Ink remaining</span><span className="set-v">{remaining === Infinity ? 'Unlimited' : `${remaining} of ${cap}`}</span></div>
               </div>
               <button className="set-signout" onClick={signOut}>Sign out</button>
             </div>
@@ -131,7 +131,7 @@ export default function ProfileModal() {
             <div className="set-body">
               <div className="set-card">
                 <div className="set-usage-top">
-                  <span className="set-k">AI generations this period</span>
+                  <span className="set-k">Ink this period</span>
                   <span className="set-usage-pct">{finite ? `${pct}% used` : 'Unlimited'}</span>
                 </div>
                 <div className="set-usage-count">{used}{finite ? ` / ${cap}` : ''}</div>
