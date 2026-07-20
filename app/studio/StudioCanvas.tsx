@@ -83,7 +83,7 @@ let counter = 1;
 // everyone except the owner account (who can still build/test them). Gated on the
 // exact email, NOT the isAdmin flag (several accounts carry isAdmin).
 const OWNER_EMAIL = 'lohokur123@gmail.com';
-const COMING_SOON_STAGES = new Set<StageKey>(['pattern', 'techpack', 'retailer']);
+const COMING_SOON_STAGES = new Set<StageKey>([]); // nothing 'coming soon' now — the production line is paid-gated by tier
 
 async function urlToDataUrl(url: string): Promise<string> {
   const r = await fetch(url);
@@ -372,13 +372,18 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     [setEdges]
   );
 
+  // Production-line panels are paid — free users get bounced to pricing.
+  const gated = useCallback((stage: StageKey) => {
+    if (stageLocked(stage)) { router.push('/pricing'); return true; }
+    return false;
+  }, [stageLocked, router]);
   const openSketch = useCallback((id: string) => setEditing(id), []);
-  const openTechpack = useCallback((id: string) => { if (!isOwner) return; setEditingTechpack(id); }, [isOwner]);
-  const openExtract = useCallback((id: string) => setEditingExtract(id), []);
-  const openPattern = useCallback((id: string) => { if (!isOwner) return; setEditingPattern(id); }, [isOwner]);
-  const openManufacture = useCallback((id: string) => setEditingManufacture(id), []);
-  const openRetailer = useCallback((id: string) => { if (!isOwner) return; setEditingRetailer(id); }, [isOwner]);
-  const openSample = useCallback((id: string) => setEditingSample(id), []);
+  const openTechpack = useCallback((id: string) => { if (gated('techpack')) return; setEditingTechpack(id); }, [gated]);
+  const openExtract = useCallback((id: string) => { if (gated('extract')) return; setEditingExtract(id); }, [gated]);
+  const openPattern = useCallback((id: string) => { if (gated('pattern')) return; setEditingPattern(id); }, [gated]);
+  const openManufacture = useCallback((id: string) => { if (gated('manufacture')) return; setEditingManufacture(id); }, [gated]);
+  const openRetailer = useCallback((id: string) => { if (gated('retailer')) return; setEditingRetailer(id); }, [gated]);
+  const openSample = useCallback((id: string) => { if (gated('sample')) return; setEditingSample(id); }, [gated]);
   const setNodeImage = useCallback(
     (id: string, image: string) =>
       setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, image } } : n))),
@@ -450,7 +455,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   // seed an empty canvas with a starter chain (from the fresh-canvas quick-starts)
   const seed = useCallback((stages: StageKey[]) => {
-    stages = stages.filter((s) => !stageComingSoon(s)); // drop unreleased stages from starters
+    stages = stages.filter((s) => !stageComingSoon(s) && !stageLocked(s)); // keep only stages this plan can use
     if (!stages.length) return;
     const gap = 300;
     const ns: Node[] = [];
@@ -465,7 +470,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     setTimeout(() => setNodes((cur) => cur.map((n) => ({ ...n, className: undefined }))), 1100);
     setTimeout(() => rf.current?.fitView({ duration: 400, padding: 0.35 }), 80);
     if (stages[0] === 'sketch') setEditing(ns[0].id); // open the pad on the first sketch
-  }, [setNodes, setEdges, stageComingSoon]);
+  }, [setNodes, setEdges, stageComingSoon, stageLocked]);
 
   const setNoteText = useCallback(
     (id: string, text: string) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: { ...n.data, text } } : n))),

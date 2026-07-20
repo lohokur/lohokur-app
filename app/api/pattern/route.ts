@@ -66,7 +66,7 @@ export async function POST(req: Request) {
   if (mode === 'refine' && !ref) return NextResponse.json({ error: 'missing outline to refine' }, { status: 400 });
   const inputs = mode === 'refine' ? [image, ref] : [image];
 
-  const gate = await consumeGeneration();
+  const gate = await consumeGeneration(2); // pattern generation drinks more ink than a visualise
   if (!gate.ok) {
     return NextResponse.json(
       { error: gate.reason === 'unauth' ? 'sign in required' : 'monthly generation limit reached', upgrade: gate.reason === 'over' },
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     const out = await editImage(prompt, inputs);
     return NextResponse.json({ image: out });
   } catch (e) {
-    await refundGeneration();
+    await refundGeneration(2);
     return NextResponse.json({ error: (e as Error).message || 'pattern generation failed' }, { status: 500 });
   }
 }
