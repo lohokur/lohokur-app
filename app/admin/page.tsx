@@ -50,7 +50,10 @@ export default async function AdminPage() {
     <main className="adm">
       <header className="adm-top">
         <h1 className="adm-h1">Analytics</h1>
-        <Link href="/" className="adm-back">← Studio</Link>
+        <span style={{ display: 'flex', gap: 18 }}>
+          <Link href="/admin/canvases" className="adm-canvas-link">Canvases →</Link>
+          <Link href="/" className="adm-back">← Studio</Link>
+        </span>
       </header>
 
       {/* funnel */}

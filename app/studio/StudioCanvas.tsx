@@ -156,6 +156,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const savedViewport = useRef<{ x: number; y: number; zoom: number } | undefined>(undefined); // last view, restored on load
   const vpApplied = useRef(false); // have we set the initial viewport yet?
   const vpSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce viewport saves
+  const adminView = useRef(false); // true when an admin is viewing someone else's canvas (read-only)
+  const [isAdminView, setIsAdminView] = useState(false);
   const router = useRouter();
   const me = useMe();
   const meRef = useRef(me);
@@ -191,7 +193,17 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   useEffect(() => {
     let cancelled = false;
     setDataProg(0.15); // fetch started
-    getProject(projectId).then(async (p) => {
+    getProject(projectId).then(async (fetched) => {
+      if (cancelled) return;
+      let p = fetched;
+      // Not the user's own project? If they're an admin, load it read-only via the
+      // admin endpoint (RLS-bypassing, server-gated to admins).
+      if (!p) {
+        try {
+          const r = await fetch(`/api/admin/project/${projectId}`);
+          if (r.ok) { p = await r.json(); adminView.current = true; setIsAdminView(true); }
+        } catch { /* not an admin / not found → stays null */ }
+      }
       if (cancelled) return;
       setProject(p);
       setDataProg(0.5); // project fetched
@@ -796,6 +808,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   }, [copyNodes, duplicateNodes, pasteNodes, setNodes, groupNodes, ungroup]);
 
   const save = useCallback(async () => {
+    if (adminView.current) return; // viewing someone else's canvas — never write
     if (!loaded.current || !dirty.current || saving.current) return;
     // Safety net: never overwrite a project that had content with an empty canvas.
     // Guards against a load race or transient state emptying the flow and wiping media.
@@ -1101,6 +1114,12 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
               canRedo={histMeta.redo}
             />
           </Panel>
+
+          {isAdminView && (
+            <Panel position="top-center">
+              <div className="admin-view-banner">Admin view · read-only</div>
+            </Panel>
+          )}
 
           <Panel position="bottom-left">
             <GenMeter />

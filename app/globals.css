@@ -265,6 +265,26 @@ body {
 .adm-back { font-family: var(--mono); font-size: 12px; color: var(--muted); text-decoration: none; }
 .adm-back:hover { color: var(--fg); }
 .adm-err { font-family: var(--mono); font-size: 13px; color: #ff9a9a; }
+
+/* admin canvases browser */
+.adm-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.adm-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); margin: 0 0 22px; }
+.ghost-link { font-family: var(--mono); font-size: 12px; color: var(--muted); text-decoration: none; }
+.ghost-link:hover { color: var(--fg); }
+.adm-table { display: flex; flex-direction: column; border: 1px solid var(--glass-line); border-radius: 12px; overflow: hidden; }
+.adm-tr { display: grid; grid-template-columns: 1.6fr 1.4fr 68px 100px 74px; align-items: center; gap: 14px; padding: 12px 18px; border-top: 1px solid rgba(255,255,255,.07); font-size: 13px; }
+.adm-tr:first-child { border-top: 0; }
+.adm-th { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.adm-tr:not(.adm-th):hover { background: rgba(255,255,255,.03); }
+.adm-email { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-num { font-family: var(--mono); color: var(--muted); font-size: 12px; }
+.adm-open { font-family: var(--mono); font-size: 12px; color: var(--mint); text-decoration: none; }
+.adm-open:hover { text-decoration: underline; }
+.adm-canvas-link { font-family: var(--mono); font-size: 12px; color: var(--mint); text-decoration: none; }
+
+/* admin read-only banner shown while viewing another user's canvas */
+.admin-view-banner { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink); background: var(--mint); border-radius: 20px; padding: 6px 14px; box-shadow: 0 6px 20px -6px rgba(0,0,0,.6); }
 .adm-funnel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
 .adm-stat { display: flex; flex-direction: column; gap: 5px; padding: 18px 18px 16px; border-radius: 14px;
   background: rgba(255,255,255,.03); border: 1px solid var(--glass-line); }
