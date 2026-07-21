@@ -1159,6 +1159,8 @@ body {
   opacity: 0; transition: opacity .16s ease, transform .16s ease;
 }
 .dock-btn:hover .dock-preview { opacity: 1; transform: translateY(-50%) translateX(0); }
+/* the preview's caption already names the node — hide the plain hover label so they don't collide */
+.dock-btn:has(.dock-preview):hover .dock-label { display: none; }
 .np-scene { display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px;
   border-radius: 9px; background: rgba(0,0,0,.28); }
 .np-ic { width: 26px; height: 26px; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
