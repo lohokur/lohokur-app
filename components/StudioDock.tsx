@@ -71,6 +71,23 @@ const ICONS: Record<StageKey, ReactNode> = {
   ), // truck
 };
 
+// A blank/source glyph for stages that start from scratch.
+const BLANK = <rect x="4" y="4" width="16" height="16" rx="3" strokeDasharray="3 3" />;
+
+// The logical input each stage transforms — drives the hover "reenactment"
+// (input → output). Stages with no entry start from BLANK.
+const BEFORE: Partial<Record<StageKey, StageKey>> = {
+  visualise: 'sketch',
+  studio: 'image',
+  extract: 'visualise',
+  pattern: 'extract',
+  techpack: 'pattern',
+  sample: 'techpack',
+  manufacture: 'sample',
+  retailer: 'manufacture',
+  ship: 'sample',
+};
+
 export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile, isLocked, onLocked, comingSoon }: {
   stages: Stage[];
   onAdd: (k: StageKey) => void;
@@ -104,6 +121,16 @@ export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile
                 <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
               </svg>
             )}
+
+            {/* hover reenactment: input → output */}
+            <div className="dock-preview" aria-hidden="true">
+              <div className="np-scene">
+                <svg className="np-ic np-before" viewBox="0 0 24 24">{BEFORE[s.key] ? ICONS[BEFORE[s.key]!] : BLANK}</svg>
+                <svg className="np-ic np-arrow" viewBox="0 0 24 24"><path d="M4 12h13" /><path d="M13 7l5 5-5 5" /></svg>
+                <svg className="np-ic np-after" viewBox="0 0 24 24">{ICONS[s.key]}</svg>
+              </div>
+              <div className="np-cap">{s.label} — {s.hint}</div>
+            </div>
           </button>
         );
       })}
