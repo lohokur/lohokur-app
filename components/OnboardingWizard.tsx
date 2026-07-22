@@ -77,7 +77,9 @@ export default function OnboardingWizard() {
     (async () => {
       try {
         const { data: { user } } = await supabaseBrowser().auth.getUser();
-        if (live) setPhase(user && !user.user_metadata?.onboarded_at ? 'active' : 'hidden');
+        // Owner account always sees the survey on login (preview/QA), regardless of onboarded state.
+        const alwaysShow = user?.email?.toLowerCase() === 'lohokur123@gmail.com';
+        if (live) setPhase(user && (alwaysShow || !user.user_metadata?.onboarded_at) ? 'active' : 'hidden');
       } catch {
         if (live) setPhase('hidden');
       }
