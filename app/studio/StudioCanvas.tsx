@@ -980,9 +980,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const editingViews = useMemo<Partial<Record<View, string>>>(() => {
     if (!editing) return {};
     const d = nodes.find((n) => n.id === editing)?.data as { image?: string; views?: Partial<Record<View, string>> } | undefined;
-    // the front view always falls back to the node's primary image (a prompt/upload result)
+    // data.image is the source of truth for the front view (a prompt/upload result,
+    // or the last drawn front) — it overrides any stale/blank views.front.
     const views = { ...(d?.views ?? {}) };
-    if (!views.front && d?.image) views.front = d.image;
+    if (d?.image) views.front = d.image;
     return views;
   }, [editing, nodes]);
 
