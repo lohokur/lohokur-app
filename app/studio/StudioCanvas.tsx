@@ -560,7 +560,17 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         body: JSON.stringify({ prompt, images: inputs, mode }),
       });
       const j = await res.json();
-      if (j.image) { setNodeData(id, { image: j.image, loading: false, note: undefined, prompt }); notifyGenUsed(); }
+      if (j.image) {
+        // for a sketch, the result IS the front view — keep data.image and
+        // views.front in sync so it stays put in the big view.
+        const patch: Record<string, unknown> = { image: j.image, loading: false, note: undefined, prompt };
+        if (node?.type === 'sketch') {
+          const curViews = (nodesRef.current.find((n) => n.id === id)?.data as { views?: Record<string, string> } | undefined)?.views ?? {};
+          patch.views = { ...curViews, front: j.image };
+        }
+        setNodeData(id, patch);
+        notifyGenUsed();
+      }
       else if (j.upgrade) { openPaywall(); setNodeData(id, { loading: false, note: undefined, prompt }); }
       else setNodeData(id, { loading: false, note: j.error || 'no image returned' });
     } catch (err) {

@@ -40,11 +40,11 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
   const inputs = order.map((x) => inputsRaw.find((i) => i.id === x)!).filter(Boolean);
   const primary = inputs[0];
 
-  // the focused input = the one being previewed, else the primary. The big card shows
-  // that input's saved render if it has one, else its raw thumbnail.
+  // the focused input = the one being previewed, else the primary. The big card
+  // shows ONLY an actual render result — never the raw input — so nothing renders
+  // until you press the Render button.
   const focusedId = (d.preview && ids.includes(d.preview)) ? d.preview : primary?.id;
-  const focused = inputs.find((i) => i.id === focusedId);
-  const card = focusedId ? (byInput[focusedId] ?? focused?.thumb) : d.image;
+  const card = focusedId ? byInput[focusedId] : d.image;
 
   const reorder = (targetId: string) => {
     if (!dragId || dragId === targetId) return;
