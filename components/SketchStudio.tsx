@@ -47,6 +47,7 @@ export default function SketchStudio({
   const docs = useRef<Partial<Record<View, Doc>>>({});
   const undoStack = useRef<Partial<Record<View, Snap[]>>>({});
   const redoStack = useRef<Partial<Record<View, Snap[]>>>({});
+  const loadedSrc = useRef<Partial<Record<View, string>>>({}); // which image is painted into each view's background
   const dispRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const bufRef = useRef<HTMLCanvasElement | null>(null);
@@ -73,26 +74,12 @@ export default function SketchStudio({
   const moveSnap = useRef<HTMLCanvasElement | null>(null);
   const panning = useRef<{ x: number; y: number; sl: number; st: number } | null>(null);
 
+  // Create a view's document on demand: a white background + one empty layer.
+  // The saved image is loaded separately (see the load effect below) so that a
+  // doc created before `views` was ready still gets its image painted in.
   const doc = (): Doc => {
     if (!docs.current[view]) {
       const bg = makeCanvas('#ffffff');
-      const src = views[view];
-      if (src) {
-        // contain-fit onto the white background, preserving aspect ratio
-        const paint = (img: HTMLImageElement) => {
-          const ctx = bg.getContext('2d')!;
-          const s = Math.min(W / img.width, H / img.height);
-          const w = img.width * s, h = img.height * s;
-          ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
-          composite();
-        };
-        const img = new Image();
-        img.crossOrigin = 'anonymous'; // hosted (generated) images are cross-origin — avoid tainting the canvas
-        img.onload = () => paint(img);
-        // if the host doesn't send CORS headers, load again just for display
-        img.onerror = () => { const d = new Image(); d.onload = () => paint(d); d.src = src; };
-        img.src = src;
-      }
       const l1: Layer = { id: nid(), name: 'Layer 1', visible: true, opacity: 1, blend: 'source-over', cv: makeCanvas() };
       docs.current[view] = { layers: [{ id: nid(), name: 'Background', visible: true, opacity: 1, blend: 'source-over', cv: bg }, l1], activeId: l1.id };
     }
@@ -150,8 +137,41 @@ export default function SketchStudio({
     restore(r.pop()!);
   }
 
-  useEffect(() => { if (open) { setView('front'); } }, [nodeId, open]);
-  useEffect(() => { if (open) { doc(); composite(); } /* eslint-disable-next-line */ }, [view, open, nodeId]);
+  // switching to a different node: drop all in-memory docs/history so its own
+  // saved views load fresh (never show the previous node's canvas)
+  useEffect(() => {
+    docs.current = {}; undoStack.current = {}; redoStack.current = {}; loadedSrc.current = {};
+    if (open) setView('front');
+  }, [nodeId, open]);
+
+  // load the saved image for the current view into its background layer, then
+  // paint. Runs whenever the view or the incoming views change, and tracks what
+  // it loaded so a doc created before `views` was ready still gets its image.
+  useEffect(() => {
+    if (!open) return;
+    const src = views[view];
+    const d = doc();
+    if (src && loadedSrc.current[view] !== src) {
+      loadedSrc.current[view] = src;
+      const bg = d.layers[0].cv;
+      const paint = (img: HTMLImageElement) => {
+        const ctx = bg.getContext('2d')!;
+        ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+        const s = Math.min(W / img.width, H / img.height);
+        const w = img.width * s, h = img.height * s;
+        ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+        composite();
+      };
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // hosted (generated) images are cross-origin — avoid tainting the canvas
+      img.onload = () => paint(img);
+      img.onerror = () => { const dd = new Image(); dd.onload = () => paint(dd); dd.src = src; };
+      img.src = src;
+    } else {
+      composite();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, nodeId, view, views]);
 
   const fit = () => {
     const st = stageRef.current; if (!st) return;
