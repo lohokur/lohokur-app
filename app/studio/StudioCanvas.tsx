@@ -139,6 +139,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [editing, setEditing] = useState<string | null>(null);
+  const [editingSketchView, setEditingSketchView] = useState<View>('front'); // which view the pad opens on
   const [editingTechpack, setEditingTechpack] = useState<string | null>(null);
   const [editingExtract, setEditingExtract] = useState<string | null>(null);
   const [editingPattern, setEditingPattern] = useState<string | null>(null);
@@ -384,7 +385,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     if (stageLocked(stage)) { openUnlock(stage); return true; } // value-selling trial/upgrade prompt
     return false;
   }, [stageLocked]);
-  const openSketch = useCallback((id: string) => setEditing(id), []);
+  const openSketch = useCallback((id: string, view: View = 'front') => { setEditingSketchView(view); setEditing(id); }, []);
   const openTechpack = useCallback((id: string) => { if (gated('techpack')) return; setEditingTechpack(id); }, [gated]);
   const openExtract = useCallback((id: string) => { if (gated('extract')) return; setEditingExtract(id); }, [gated]);
   const openPattern = useCallback((id: string) => { if (gated('pattern')) return; setEditingPattern(id); }, [gated]);
@@ -1192,6 +1193,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         <SketchStudio
           open={!!editing}
           nodeId={editing}
+          initialView={editingSketchView}
           views={editingViews}
           onView={(view, d) => { if (editing) setNodeView(editing, view, d); }}
           onClose={() => setEditing(null)}

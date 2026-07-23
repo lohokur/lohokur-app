@@ -36,13 +36,14 @@ function makeCanvas(fill?: string): HTMLCanvasElement {
 }
 
 export default function SketchStudio({
-  open, nodeId, views, onView, onClose,
+  open, nodeId, views, onView, onClose, initialView = 'front',
 }: {
   open: boolean;
   nodeId: string | null;
   views: Partial<Record<View, string>>;
   onView: (view: View, dataUrl: string) => void;
   onClose: () => void;
+  initialView?: View; // which view to open on (F/S/B clicked on the node)
 }) {
   const docs = useRef<Partial<Record<View, Doc>>>({});
   const undoStack = useRef<Partial<Record<View, Snap[]>>>({});
@@ -141,8 +142,9 @@ export default function SketchStudio({
   // saved views load fresh (never show the previous node's canvas)
   useEffect(() => {
     docs.current = {}; undoStack.current = {}; redoStack.current = {}; loadedSrc.current = {};
-    if (open) setView('front');
-  }, [nodeId, open]);
+    if (open) setView(initialView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId, open, initialView]);
 
   // load the saved image for the current view into its background layer, then
   // paint. Runs whenever the view or the incoming views change, and tracks what

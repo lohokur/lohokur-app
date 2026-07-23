@@ -1,9 +1,10 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import type { View } from '@/lib/nodeTypes';
 
 export type StudioCtx = {
-  openSketch: (id: string) => void;
+  openSketch: (id: string, view?: View) => void;
   visualise: (id: string) => void;
   openTechpack: (id: string) => void;
   openExtract: (id: string) => void;

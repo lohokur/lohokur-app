@@ -59,7 +59,7 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
           <button
             key={v}
             className={`sk-view${viewImg(v) ? ' has' : ''}${view === v ? ' on' : ''}`}
-            onClick={(e) => { e.stopPropagation(); viewImg(v) ? setView(v) : openSketch(id); }}
+            onClick={(e) => { e.stopPropagation(); viewImg(v) ? setView(v) : openSketch(id, v); }}
             title={viewImg(v) ? `${v[0].toUpperCase()}${v.slice(1)} view` : `Draw the ${v} view`}
           >
             {v[0].toUpperCase()}
