@@ -49,7 +49,10 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
         ) : shown ? (
           <img src={shown} alt={`Sketch ${view}`} draggable={false} />
         ) : (
-          <span className="sk-empty">{view === 'front' ? 'draw · upload · or prompt' : `draw the ${view} view`}</span>
+          <div className="fb-blank">
+            <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l3.6-.9L18.1 8.6a1.8 1.8 0 0 0 0-2.6l-1.1-1.1a1.8 1.8 0 0 0-2.6 0L3.9 15.4 3 19z" /></svg>
+            <span className="fb-hint">{view === 'front' ? 'draw · upload · or prompt' : `draw the ${view} view`}</span>
+          </div>
         )}
       </div>
 

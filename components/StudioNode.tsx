@@ -24,7 +24,10 @@ export default function StudioNode({ id, data, selected }: NodeProps) {
         ) : d.image ? (
           <img src={d.image} alt="" draggable={false} />
         ) : (
-          <span className="fb-empty">connect a render, then prompt a scene below</span>
+          <div className="fb-blank">
+            <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><ellipse cx="12" cy="12" rx="4" ry="9" /></svg>
+            <span className="fb-hint">connect a render, then prompt a scene</span>
+          </div>
         )}
       </div>
 

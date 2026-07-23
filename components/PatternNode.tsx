@@ -27,9 +27,14 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} className="sn-handle" />
 
       <div className="fb-canvas" onDoubleClick={() => openPattern(id)}>
-        {image
-          ? <img src={image} alt="Pattern" draggable={false} />
-          : <span className="fb-empty">extract a piece · trace the pattern</span>}
+        {image ? (
+          <img src={image} alt="Pattern" draggable={false} />
+        ) : (
+          <div className="fb-blank">
+            <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></svg>
+            <span className="fb-hint">extract a piece · trace the pattern</span>
+          </div>
+        )}
       </div>
 
       <span className="fb-tag">Pattern maker</span>
