@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
-import { OpenIcon, ActionArrow } from '@/components/ActionArrow';
+import { OpenIcon, ActionArrow, UploadIcon } from '@/components/ActionArrow';
 import { VIEWS, type View } from '@/lib/nodeTypes';
 
 // The whole node IS the sketch canvas. On hover: the prompt bar floats over the
@@ -59,9 +59,8 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
           <button
             key={v}
             className={`sk-view${viewImg(v) ? ' has' : ''}${view === v ? ' on' : ''}`}
-            disabled={!viewImg(v)}
-            onClick={(e) => { e.stopPropagation(); if (viewImg(v)) setView(v); }}
-            title={`${v[0].toUpperCase()}${v.slice(1)} view`}
+            onClick={(e) => { e.stopPropagation(); viewImg(v) ? setView(v) : openSketch(id); }}
+            title={viewImg(v) ? `${v[0].toUpperCase()}${v.slice(1)} view` : `Draw the ${v} view`}
           >
             {v[0].toUpperCase()}
           </button>
@@ -71,7 +70,7 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
       {/* draw / upload tools — appear on hover */}
       <div className="sk-tools">
         <button className="sk-tool nodrag" onClick={(e) => { e.stopPropagation(); openSketch(id); }} title={front ? 'Edit drawing' : 'Draw'} aria-label={front ? 'Edit drawing' : 'Draw'}><OpenIcon /></button>
-        <button className="sk-tool nodrag" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }} title="Upload an image" aria-label="Upload an image"><ActionArrow /></button>
+        <button className="sk-tool nodrag" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }} title="Upload an image" aria-label="Upload an image"><UploadIcon /></button>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { loadFile(e.target.files?.[0]); e.currentTarget.value = ''; }} />
       </div>
 
