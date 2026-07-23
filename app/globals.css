@@ -816,6 +816,17 @@ body {
 .pe-swatches button { aspect-ratio: 1; border-radius: 5px; border: 1px solid rgba(255,255,255,.14); cursor: pointer; padding: 0; }
 .pe-swatches button.on { box-shadow: 0 0 0 2px #fff; }
 .pe-swatches.recent button { border-radius: 50%; }
+
+/* simple colour wheel (minimal pad) */
+.cw { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 4px 0 2px; }
+.cw-disc { position: relative; border-radius: 50%; box-shadow: 0 6px 20px -10px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.08); }
+.cw-disc canvas { display: block; border-radius: 50%; cursor: crosshair; touch-action: none; }
+.cw-marker { position: absolute; width: 15px; height: 15px; border-radius: 50%; transform: translate(-50%, -50%);
+  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.55), 0 1px 5px rgba(0,0,0,.6); pointer-events: none; }
+.cw-val { width: 152px; height: 14px; -webkit-appearance: none; appearance: none; border-radius: 999px;
+  border: 1px solid var(--glass-line); cursor: pointer; outline: none; }
+.cw-val::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid rgba(0,0,0,.45); cursor: pointer; }
+.cw-val::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid rgba(0,0,0,.45); cursor: pointer; }
 .pe-slider { display: grid; grid-template-columns: 58px 1fr 26px; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .pe-slider.sm { grid-template-columns: 52px 1fr 24px; }
 .pe-slider input[type=range] { width: 100%; accent-color: #fff; }

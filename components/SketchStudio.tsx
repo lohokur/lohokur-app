@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState, type PointerEvent as RPE } from 'react';
 import { VIEWS, type View } from '@/lib/nodeTypes';
+import ColorWheel from '@/components/ColorWheel';
 
 const W = 1000, H = 750;
+// the minimal side-pad shows only these brushes; the rest live in the full workspace
+const SIMPLE_TOOLS = new Set(['brush', 'pencil', 'eraser']);
 type Tool = 'brush' | 'pencil' | 'eraser' | 'fill' | 'eyedropper' | 'line' | 'rect' | 'ellipse' | 'move' | 'hand';
 type Blend = 'source-over' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'hard-light' | 'soft-light' | 'difference';
 type Layer = { id: string; name: string; visible: boolean; opacity: number; blend: Blend; cv: HTMLCanvasElement };
@@ -56,7 +59,9 @@ export default function SketchStudio({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [view, setView] = useState<View>('front');
-  const [full, setFull] = useState(true); // immersive full-screen workspace by default (Procreate-like)
+  // Simple pad slides in from the side by default; the expand button reveals the
+  // full Photoshop-grade workspace (all tools, layers, blend modes).
+  const [full, setFull] = useState(false);
   const [, force] = useState(0);
   const rerender = () => force((n) => n + 1);
   const [tool, setTool] = useState<Tool>('brush');
@@ -322,15 +327,19 @@ export default function SketchStudio({
 
       <div className="pe-body">
         <div className="pe-rail">
-          {TOOLS.map((t) => (
+          {(full ? TOOLS : TOOLS.filter((t) => SIMPLE_TOOLS.has(t.key))).map((t) => (
             <button key={t.key} className={`pe-tool${tool === t.key ? ' on' : ''}`} title={t.label} onClick={() => setTool(t.key)}>
               <svg viewBox="0 0 24 24"><path d={t.icon} /></svg>
             </button>
           ))}
-          <div className="pe-rail-sp" />
-          <button className="pe-tool" title="Import image" onClick={() => fileRef.current?.click()}>
-            <svg viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4M4 20h16" /></svg>
-          </button>
+          {full && (
+            <>
+              <div className="pe-rail-sp" />
+              <button className="pe-tool" title="Import image" onClick={() => fileRef.current?.click()}>
+                <svg viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4M4 20h16" /></svg>
+              </button>
+            </>
+          )}
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { importImage(e.target.files?.[0]); e.currentTarget.value = ''; }} />
         </div>
 
@@ -346,29 +355,40 @@ export default function SketchStudio({
         <div className="pe-side">
           <div className="pe-panel">
             <div className="pe-ph">Color</div>
-            <div className="pe-color-row">
-              <input type="color" value={color} onChange={(e) => { setColor(e.target.value); if (tool === 'eraser') setTool('brush'); }} className="pe-color" />
-              <input className="pe-hex" value={color} onChange={(e) => setColor(e.target.value)} />
-            </div>
-            <div className="pe-swatches">
-              {SWATCHES.map((c) => <button key={c} className={color === c ? 'on' : ''} style={{ background: c }} onClick={() => { setColor(c); if (tool === 'eraser') setTool('brush'); }} />)}
-            </div>
-            {recent.length > 0 && <div className="pe-swatches recent">{recent.map((c, i) => <button key={i} style={{ background: c }} onClick={() => setColor(c)} />)}</div>}
+            {full ? (
+              <>
+                <div className="pe-color-row">
+                  <input type="color" value={color} onChange={(e) => { setColor(e.target.value); if (tool === 'eraser') setTool('brush'); }} className="pe-color" />
+                  <input className="pe-hex" value={color} onChange={(e) => setColor(e.target.value)} />
+                </div>
+                <div className="pe-swatches">
+                  {SWATCHES.map((c) => <button key={c} className={color === c ? 'on' : ''} style={{ background: c }} onClick={() => { setColor(c); if (tool === 'eraser') setTool('brush'); }} />)}
+                </div>
+                {recent.length > 0 && <div className="pe-swatches recent">{recent.map((c, i) => <button key={i} style={{ background: c }} onClick={() => setColor(c)} />)}</div>}
+              </>
+            ) : (
+              <ColorWheel value={color} onChange={(c) => { setColor(c); if (tool === 'eraser') setTool('brush'); }} />
+            )}
           </div>
 
           <div className="pe-panel">
             <div className="pe-ph">Brush</div>
             <label className="pe-slider"><span>Size</span><input type="range" min={1} max={120} value={size} onChange={(e) => setSize(+e.target.value)} /><b>{size}</b></label>
-            <label className="pe-slider"><span>Opacity</span><input type="range" min={5} max={100} value={opacity} onChange={(e) => setOpacity(+e.target.value)} /><b>{opacity}</b></label>
-            <label className="pe-slider"><span>Hardness</span><input type="range" min={0} max={100} value={hardness} onChange={(e) => setHardness(+e.target.value)} /><b>{hardness}</b></label>
-            {(tool === 'rect' || tool === 'ellipse') && (
-              <div className="pe-fillmode">
-                <button className={fillShape ? 'on' : ''} onClick={() => setFillShape(true)}>Fill</button>
-                <button className={!fillShape ? 'on' : ''} onClick={() => setFillShape(false)}>Stroke</button>
-              </div>
+            {full && (
+              <>
+                <label className="pe-slider"><span>Opacity</span><input type="range" min={5} max={100} value={opacity} onChange={(e) => setOpacity(+e.target.value)} /><b>{opacity}</b></label>
+                <label className="pe-slider"><span>Hardness</span><input type="range" min={0} max={100} value={hardness} onChange={(e) => setHardness(+e.target.value)} /><b>{hardness}</b></label>
+                {(tool === 'rect' || tool === 'ellipse') && (
+                  <div className="pe-fillmode">
+                    <button className={fillShape ? 'on' : ''} onClick={() => setFillShape(true)}>Fill</button>
+                    <button className={!fillShape ? 'on' : ''} onClick={() => setFillShape(false)}>Stroke</button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
+          {full && (
           <div className="pe-panel pe-layers">
             <div className="pe-ph">Layers
               <span className="pe-layer-actions">
@@ -396,6 +416,7 @@ export default function SketchStudio({
               ))}
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>
