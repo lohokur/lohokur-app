@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import NodeArt from '@/components/NodeArt';
-import { HOTKEY_FOR, type Stage, type StageKey } from '@/lib/nodeTypes';
+import { HOTKEY_FOR, CARD_TEXT, type Stage, type StageKey } from '@/lib/nodeTypes';
 
 // line icons (24x24, stroke) for each pipeline stage
 const ICONS: Record<StageKey, ReactNode> = {
@@ -120,7 +120,7 @@ export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile
             <svg className="np-ic np-arrow" viewBox="0 0 24 24"><path d="M4 12h13" /><path d="M13 7l5 5-5 5" /></svg>
             <svg className="np-ic np-after" viewBox="0 0 24 24">{ICONS[s.key]}</svg>
           </div>
-          <div className="np-cap">{s.label} — {s.hint}</div>
+          <div className="np-cap">{CARD_TEXT[s.key] ?? s.hint}</div>
         </div>
       </button>
     );

@@ -25,6 +25,18 @@ export const STAGES: Stage[] = [
   { key: 'sample', label: 'Produce', hint: 'One sample or a bulk run' },
   { key: 'ship', label: 'Ship', hint: '3PL or any address' },
 ];
+
+// The descriptive line shown on a node card (blank state) — reused as the dock
+// hover-preview caption so both read the same.
+export const CARD_TEXT: Partial<Record<StageKey, string>> = {
+  sketch: 'draw · upload · or prompt',
+  visualise: 'plug in a sketch → press render',
+  studio: 'connect a render, then prompt a scene',
+  pattern: 'create a pattern of this product',
+  techpack: 'create a techpack of this product',
+  sample: 'create a physical sample of this product',
+  ship: 'ship this product to any address',
+};
 // Vaulted stages: kept as registered node types so old canvases still render,
 // but no longer offered in the dock / pipeline.
 //   retailer — shelved 2026-07
