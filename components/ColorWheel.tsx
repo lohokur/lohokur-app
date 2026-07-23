@@ -48,23 +48,24 @@ export default function ColorWheel({ value, onChange }: { value: string; onChang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  // paint the disc at the current brightness
+  // paint the disc once, always at full brightness (colourful); brightness is a
+  // separate control so the wheel stays inviting even for dark colours.
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
-    const ctx = cv.getContext('2d')!; const v = hsv[2];
+    const ctx = cv.getContext('2d')!;
     const img = ctx.createImageData(SIZE, SIZE);
     for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
       const dx = x - R, dy = y - R, dist = Math.sqrt(dx * dx + dy * dy), i = (y * SIZE + x) * 4;
       if (dist <= R) {
         const h = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
         const s = Math.min(1, dist / R);
-        const [rr, gg, bb] = hsvToRgb(h, s, v);
+        const [rr, gg, bb] = hsvToRgb(h, s, 1);
         img.data[i] = rr; img.data[i + 1] = gg; img.data[i + 2] = bb;
         img.data[i + 3] = dist > R - 1 ? Math.max(0, (R - dist) * 255) : 255; // soft edge
       }
     }
     ctx.putImageData(img, 0, 0);
-  }, [hsv]);
+  }, []);
 
   const pick = (e: React.PointerEvent) => {
     const cv = ref.current!; const r = cv.getBoundingClientRect();
