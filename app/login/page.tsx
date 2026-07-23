@@ -28,6 +28,8 @@ export default function Login() {
       setMode('in');
       return;
     }
+    // count this login (session cookie is now set; server verifies who it is)
+    fetch('/api/auth/record-login', { method: 'POST' }).catch(() => {});
     router.push('/');
     router.refresh();
   };

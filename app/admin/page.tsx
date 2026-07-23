@@ -51,6 +51,7 @@ export default async function AdminPage() {
       <header className="adm-top">
         <h1 className="adm-h1">Analytics</h1>
         <span style={{ display: 'flex', gap: 18 }}>
+          <Link href="/admin/logins" className="adm-canvas-link">Logins →</Link>
           <Link href="/admin/canvases" className="adm-canvas-link">Canvases →</Link>
           <Link href="/" className="adm-back">← Studio</Link>
         </span>

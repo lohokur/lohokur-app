@@ -30,7 +30,10 @@ export default async function AdminCanvases() {
     <main className="adm">
       <div className="adm-head">
         <h1 className="adm-h1">Canvases</h1>
-        <Link href="/admin" className="ghost-link">← Analytics</Link>
+        <span style={{ display: 'flex', gap: 18 }}>
+          <Link href="/admin/logins" className="ghost-link">Logins →</Link>
+          <Link href="/admin" className="ghost-link">← Analytics</Link>
+        </span>
       </div>
       <p className="adm-sub">{rows.length} project{rows.length === 1 ? '' : 's'} across all accounts. Open any to view read-only.</p>
 
