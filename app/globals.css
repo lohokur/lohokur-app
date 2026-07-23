@@ -346,14 +346,16 @@ body {
 
 /* icon rail — each button reveals its label on hover (bounces out to the right) */
 .dock {
-  position: relative; overflow: hidden;
+  position: relative; overflow: visible;
   display: flex; flex-direction: column; gap: 4px; padding: 7px;
   background: #0c0e10;
   border: 1px solid var(--glass-line); border-radius: 16px;
   box-shadow: 0 30px 70px -30px rgba(0,0,0,.85);
 }
-/* same grainy-glow generative art as the cards, filling the dock */
-.dock-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+/* same grainy-glow generative art as the cards, filling the dock. Clip it to the
+   dock's rounded corners via its own radius so the dock can stay overflow:visible
+   (otherwise the hover-preview popovers get clipped). */
+.dock-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; border-radius: 15px; }
 .dock > *:not(.dock-art) { position: relative; z-index: 1; }
 .dock-btn {
   position: relative; display: flex; align-items: center; justify-content: center;
