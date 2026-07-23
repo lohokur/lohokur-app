@@ -34,6 +34,10 @@ function paintArt(cv: HTMLCanvasElement, cols: string[], seed: number) {
   const sg = x.createLinearGradient(0, 0, 0, h);
   sg.addColorStop(0, 'rgba(255,255,255,.16)'); sg.addColorStop(.25, 'rgba(255,255,255,0)'); sg.addColorStop(1, 'rgba(0,0,0,.28)');
   x.fillStyle = sg; x.fillRect(0, 0, w, h);
+  // vignette — darken the edges so the glow reads as a centred highlight (and text stays legible)
+  const vg = x.createRadialGradient(w / 2, h * 0.52, w * 0.15, w / 2, h * 0.52, w * 0.95);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.7, 'rgba(0,0,0,.12)'); vg.addColorStop(1, 'rgba(0,0,0,.5)');
+  x.fillStyle = vg; x.fillRect(0, 0, w, h);
 }
 
 export function paintNodeArt(cv: HTMLCanvasElement, seed: number) {

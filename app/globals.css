@@ -591,7 +591,11 @@ body {
 .fb-blank, .fb-info > svg, .fb-info > strong, .fb-info > span { position: relative; z-index: 1; }
 
 .fb-blank { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 22px; text-align: center; }
-.fb-blank .fb-ic { opacity: .8; }
+.fb-blank .fb-ic { opacity: .9; }
+/* legibility of icon + text over the bright generative art */
+.fb-ic { filter: drop-shadow(0 1px 4px rgba(0,0,0,.55)); }
+.fb-hint, .fb-info strong, .fb-info span { text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.fb-info strong { color: #fff; }
 
 /* centred content for the non-image card nodes (Techpack · Produce · Ship) */
 .fb-canvas.fb-info { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; padding: 22px; text-align: center; }
