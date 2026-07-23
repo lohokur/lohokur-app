@@ -58,13 +58,13 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
     <div className={`stage-node visualise-node${selected ? ' selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="sn-handle" />
       <div className="sn-head">
-        <span>Visualise</span>
+        <span>Render</span>
         <button
           className={`sn-act nodrag${d.busy ? ' busy' : ''}`}
           onClick={(e) => { e.stopPropagation(); visualise(id); }}
           disabled={!!d.busy || !inputs.length}
-          title={(d.preview && ids.includes(d.preview)) ? 'Re-render this input' : 'Visualise'}
-          aria-label="Visualise"
+          title={(d.preview && ids.includes(d.preview)) ? 'Re-render this input' : 'Render'}
+          aria-label="Render"
         >
           {d.busy ? <span className="sn-spin" /> : <ActionArrow />}
         </button>
@@ -72,7 +72,7 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
 
       <div className="sn-draw">
         {card ? (
-          <img src={card} alt="Visualised" draggable={false} />
+          <img src={card} alt="Rendered" draggable={false} />
         ) : (
           <span className="sn-empty">{d.note ?? 'plug in a sketch + image → run'}</span>
         )}
@@ -88,7 +88,7 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
               key={inp.id}
               draggable
               className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${d.preview === inp.id ? ' focus' : ''}${dragId === inp.id ? ' dragging' : ''}${d.busy === inp.id ? ' rendering' : ''}`}
-              title={`${inp.kind}${byInput[inp.id] ? ' · visualised' : ''} · click to select (then Visualise redoes just this) · drag to reorder`}
+              title={`${inp.kind}${byInput[inp.id] ? ' · rendered' : ''} · click to select (then Render redoes just this) · drag to reorder`}
               onClick={(e) => {
                 e.stopPropagation();
                 const on = d.preview === inp.id;                  // toggle selection

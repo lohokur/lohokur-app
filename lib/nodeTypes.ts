@@ -18,7 +18,7 @@ export type VisResult = { id: string; image: string; inputs: string[] };
 // The LOHO KUR pipeline, in order. v1 = structure only (no AI yet).
 export const STAGES: Stage[] = [
   { key: 'sketch', label: 'Sketch', hint: 'Draw, prompt or drop an idea' },
-  { key: 'visualise', label: 'Visualise', hint: 'Render it photoreal' },
+  { key: 'visualise', label: 'Render', hint: 'Make it photoreal' },
   { key: 'studio', label: 'Worldbuild', hint: 'Plug in a visual · prompt it anywhere' },
   { key: 'extract', label: 'Extract', hint: 'Isolate one piece' },
   { key: 'pattern', label: 'Pattern maker', hint: 'Trace a 2D outline' },

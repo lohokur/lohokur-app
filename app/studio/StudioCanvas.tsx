@@ -1150,10 +1150,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         {canvasReady && !booting && project && nodes.length === 0 && (
           <div className="freshstart">
             <div className="fs-hint">
-              New here? Start with a flow — or press <kbd>S</kbd> sketch · <kbd>V</kbd> visualise
+              New here? Start with a flow — or press <kbd>S</kbd> sketch · <kbd>V</kbd> render
             </div>
             <div className="fs-pills">
-              <button onClick={() => seed(['sketch', 'visualise'])}>Sketch → Visualise</button>
+              <button onClick={() => seed(['sketch', 'visualise'])}>Sketch → Render</button>
               <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack', 'sample'])}>Sketch → physical product</button>
               <button onClick={() => seed(['sketch', 'visualise', 'extract', 'pattern', 'techpack', 'manufacture', 'ship'])}>Sketch → bulk order</button>
             </div>

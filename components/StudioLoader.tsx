@@ -10,7 +10,7 @@ const TIPS = [
   'Double-click any node to open its studio.',
   'Drag from a node handle to branch the next stage.',
   'The canvas saves itself — there is no save button.',
-  'Flow: Sketch → Visualise → Techpack → Sample → Manufacture.',
+  'Flow: Sketch → Render → Techpack → Sample → Manufacture.',
   'Back on the home screen, ← / → spins the halo.',
   'Connect a node to Ship to mark it production-ready.',
 ];
