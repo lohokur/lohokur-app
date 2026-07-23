@@ -47,7 +47,10 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
       {/* the canvas fills the whole node — shows the selected view */}
       <div className="sk-canvas" onDoubleClick={() => openSketch(id, view)}>
         {d.loading ? (
-          <span className="sk-empty pulse">{d.note ?? 'generating…'}</span>
+          <>
+            <NodeArt seed={seedFrom(id)} animate />
+            <div className="fb-blank"><span className="fb-hint">{d.note ?? 'generating…'}</span></div>
+          </>
         ) : shown ? (
           <img src={shown} alt={`Sketch ${view}`} draggable={false} />
         ) : (

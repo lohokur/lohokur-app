@@ -47,6 +47,33 @@ export function paintNodeArt(cv: HTMLCanvasElement, seed: number) {
   paintArt(cv, GREY, seed);
 }
 
+// Animated frame — the glow blooms drift organically. Used as a node's loading
+// indicator (the whole gradient swishes). Cheap (no per-pixel grain) so it can run
+// at 60fps. `t` is elapsed seconds.
+export function paintNodeArtFrame(cv: HTMLCanvasElement, seed: number, t: number) {
+  const cols = GREY;
+  const w = cv.width, h = cv.height, x = cv.getContext('2d'); if (!x) return;
+  const base = hexc(cols[cols.length - 1]);
+  x.globalCompositeOperation = 'source-over';
+  x.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`; x.fillRect(0, 0, w, h);
+  const R = mk(seed + 3);
+  for (let i = 0; i < 5; i++) {
+    const ph = R() * Math.PI * 2, sp = 0.35 + R() * 0.55, sp2 = 0.3 + R() * 0.5;
+    const cx = (0.5 + 0.38 * Math.sin(t * sp + ph)) * w;
+    const cy = (0.5 + 0.38 * Math.cos(t * sp2 + ph * 1.3)) * h;
+    const rad = (0.42 + 0.14 * Math.sin(t * 0.5 + i)) * w;
+    const c = cols[i % cols.length];
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    g.addColorStop(0, c + '8a'); g.addColorStop(1, c + '00');
+    x.globalCompositeOperation = 'lighter'; x.fillStyle = g; x.beginPath(); x.arc(cx, cy, rad, 0, 7); x.fill();
+  }
+  x.globalCompositeOperation = 'source-over';
+  x.fillStyle = 'rgba(10,11,13,.4)'; x.fillRect(0, 0, w, h);
+  const vg = x.createRadialGradient(w / 2, h * 0.5, w * 0.1, w / 2, h * 0.5, w * 1.0);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.65, 'rgba(0,0,0,.22)'); vg.addColorStop(1, 'rgba(0,0,0,.6)');
+  x.fillStyle = vg; x.fillRect(0, 0, w, h);
+}
+
 // stable per-node seed from its id, so each card's art is unique but consistent
 export function seedFrom(id: string): number {
   let s = 0;

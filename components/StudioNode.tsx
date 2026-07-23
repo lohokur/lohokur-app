@@ -22,7 +22,10 @@ export default function StudioNode({ id, data, selected }: NodeProps) {
 
       <div className="fb-canvas">
         {d.loading ? (
-          <span className="fb-empty pulse">{d.note ?? 'branding…'}</span>
+          <>
+            <NodeArt seed={seedFrom(id)} animate />
+            <div className="fb-blank"><span className="fb-hint">{d.note ?? 'branding…'}</span></div>
+          </>
         ) : d.image ? (
           <img src={d.image} alt="" draggable={false} />
         ) : (
