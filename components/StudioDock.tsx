@@ -133,7 +133,7 @@ export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile
 
   return (
     <div className="dock" role="toolbar" aria-label="Add nodes">
-      <NodeArt seed={4207} w={90} h={720} className="dock-art" />
+      <NodeArt seed={4207} w={90} h={720} className="dock-art" animate speed={0.5} />
       {pipeline.map(renderStage)}
 
       <div className="dock-div" />
