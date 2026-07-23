@@ -60,18 +60,22 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} className="sn-handle" />
 
       <div className="fb-canvas">
-        {card ? (
+        {d.busy ? (
+          <>
+            <NodeArt seed={seedFrom(id)} animate />
+            <div className="fb-blank"><span className="fb-hint">rendering…</span></div>
+          </>
+        ) : card ? (
           <img src={card} alt="Rendered" draggable={false} />
         ) : (
           <>
-            <NodeArt seed={seedFrom(id)} animate={!!d.busy} />
+            <NodeArt seed={seedFrom(id)} />
             <div className="fb-blank">
               <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.6" /><path d="M3 16.5l5-4.5 4 3.5 3-2.5 6 5" /></svg>
-              <span className="fb-hint">{d.busy ? 'rendering…' : (d.note ?? 'plug in a sketch → press render')}</span>
+              <span className="fb-hint">{d.note ?? 'plug in a sketch → press render'}</span>
             </div>
           </>
         )}
-        {d.busy && card && <span className="fb-rendering">rendering…</span>}
       </div>
 
       <span className="fb-tag">Render</span>
