@@ -12,11 +12,14 @@ import { VIEWS, type View } from '@/lib/nodeTypes';
 export default function SketchNode({ id, data, selected }: NodeProps) {
   const { openSketch, promptImage, setNodeImage } = useStudio();
   const d = data as { image?: string; views?: Partial<Record<View, string>>; loading?: boolean; note?: string; prompt?: string; coachGenerate?: boolean };
-  const views = d.views ?? (d.image ? { front: d.image } : {});
-  const front = views.front ?? d.image;
+  const views = d.views ?? {};
+  // data.image is the primary/front image — drawing the front, uploading, and
+  // prompting all write to it, so it's the source of truth the front view shows.
+  const front = d.image ?? views.front;
+  const viewImg = (v: View): string | undefined => (v === 'front' ? front : views[v]);
 
   const [view, setView] = useState<View>('front');
-  const shown = views[view] ?? front;
+  const shown = viewImg(view) ?? front;
   const [text, setText] = useState(d.prompt ?? '');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -55,9 +58,9 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
         {VIEWS.map((v) => (
           <button
             key={v}
-            className={`sk-view${views[v] ? ' has' : ''}${view === v ? ' on' : ''}`}
-            disabled={!views[v]}
-            onClick={(e) => { e.stopPropagation(); if (views[v]) setView(v); }}
+            className={`sk-view${viewImg(v) ? ' has' : ''}${view === v ? ' on' : ''}`}
+            disabled={!viewImg(v)}
+            onClick={(e) => { e.stopPropagation(); if (viewImg(v)) setView(v); }}
             title={`${v[0].toUpperCase()}${v.slice(1)} view`}
           >
             {v[0].toUpperCase()}
