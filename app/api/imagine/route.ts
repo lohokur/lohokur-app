@@ -13,15 +13,22 @@ const isImageRef = (x: unknown): x is string =>
 // House style for garment prompts (the Sketch node). Every product a user types
 // is rendered the same on-brand way: a clean ghost-mannequin shot floating in
 // white — so it drops straight into the pipeline and onto the identities.
-const PRODUCT_STYLE =
-  'Present the result as a clean, professional e-commerce PRODUCT SHOT: the single garment on an invisible GHOST MANNEQUIN — a hollow, filled-out worn 3D form with NO visible person at all (no head, no neck, no face, no hands, no arms, no legs, no skin) — so the garment holds a natural, worn shape as if a body were inside it. Float it centred in a completely empty, seamless PURE WHITE studio background with soft, even lighting and a subtle soft contact shadow beneath. Absolutely NO scenery, room, furniture, props, hanger, packaging, folding or flat-lay, NO added text or logos, NO human model and NO face. Front-facing, the whole garment in frame with clean margins and crisp focus — just the product floating in clean white space.';
+const ANGLE: Record<string, string> = {
+  front: 'The garment is photographed straight from the FRONT.',
+  side: 'The garment is photographed from a full SIDE PROFILE (viewed from directly beside it).',
+  back: 'The garment is photographed straight from the BACK.',
+};
+const productStyle = (view: string) =>
+  'Present the result as a clean, professional e-commerce PRODUCT SHOT: the single garment on an invisible GHOST MANNEQUIN — a hollow, filled-out worn 3D form with NO visible person at all (no head, no neck, no face, no hands, no arms, no legs, no skin) — so the garment holds a natural, worn shape as if a body were inside it. Float it centred in a completely empty, seamless PURE WHITE studio background with soft, even lighting and a subtle soft contact shadow beneath. Absolutely NO scenery, room, furniture, props, hanger, packaging, folding or flat-lay, NO added text or logos, NO human model and NO face. '
+  + (ANGLE[view] ?? ANGLE.front)
+  + ' The whole garment is in frame with clean margins and crisp focus — just the product floating in clean white space.';
 
 // Generic image endpoint:
 //   { prompt }                            → text-to-image
 //   { prompt, images: [dataUrl] }         → transform/rebrand the given image(s)
-//   { prompt, mode: 'product' }           → wrap in the ghost-mannequin house style (Sketch node)
+//   { prompt, mode: 'product', view }     → ghost-mannequin house style at a given angle (Sketch node)
 export async function POST(req: Request) {
-  const { prompt, images, mode } = await req.json().catch(() => ({}));
+  const { prompt, images, mode, view } = await req.json().catch(() => ({}));
   if (!prompt || !String(prompt).trim()) {
     return NextResponse.json({ error: 'missing prompt' }, { status: 400 });
   }
@@ -47,7 +54,7 @@ export async function POST(req: Request) {
         : 'Generate a single photorealistic, high-resolution image as described below. ';
     }
 
-    const full = guide + '"' + String(prompt).trim() + '".' + (product ? ' ' + PRODUCT_STYLE : '');
+    const full = guide + '"' + String(prompt).trim() + '".' + (product ? ' ' + productStyle(String(view || 'front')) : '');
     const image = await generateImage(full, refs);
     return NextResponse.json({ image });
   } catch (e) {

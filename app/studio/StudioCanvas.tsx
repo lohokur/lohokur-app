@@ -536,12 +536,14 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     return () => window.removeEventListener('paste', onPaste);
   }, [addImageNode]);
 
-  // AI image: text-to-image, or transform/rebrand every image wired into this node
+  // AI image. Sketch prompts are garments → on-brand ghost-mannequin product shot,
+  // and we produce all THREE views (front, then side + back generated from the front
+  // so they match). Worldbuild (studio) stays free-form and single-image.
   const promptImage = useCallback(async (id: string, prompt: string) => {
     const node = nodesRef.current.find((n) => n.id === id);
-    // Sketch prompts are garments → force the on-brand ghost-mannequin product shot.
-    // Worldbuild (studio) stays free-form.
-    const mode = node?.type === 'sketch' ? 'product' : 'freeform';
+    const isSketch = node?.type === 'sketch';
+    const mode = isSketch ? 'product' : 'freeform';
+
     const inputs: string[] = [];
     for (const e of edgesRef.current) {
       if (e.target !== id) continue;
@@ -553,29 +555,42 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     // out of generations → paywall now, before the slow render
     if (blockedByCap(meRef.current)) { setNodeData(id, { loading: false, note: undefined, prompt }); return; }
 
+    const curViews = (): Record<string, string> =>
+      (nodesRef.current.find((n) => n.id === id)?.data as { views?: Record<string, string> } | undefined)?.views ?? {};
+    const call = (p: string, imgs: string[], view?: string) =>
+      fetch('/api/imagine', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: p, images: imgs, mode, view }) })
+        .then((r) => r.json() as Promise<{ image?: string; upgrade?: boolean; error?: string }>);
+
     setNodeData(id, { loading: true, note: 'generating…', prompt });
     try {
-      const res = await fetch('/api/imagine', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ prompt, images: inputs, mode }),
-      });
-      const j = await res.json();
-      if (j.image) {
-        // for a sketch, the result IS the front view — keep data.image and
-        // views.front in sync so it stays put in the big view.
-        const patch: Record<string, unknown> = { image: j.image, loading: false, note: undefined, prompt };
-        if (node?.type === 'sketch') {
-          const curViews = (nodesRef.current.find((n) => n.id === id)?.data as { views?: Record<string, string> } | undefined)?.views ?? {};
-          patch.views = { ...curViews, front: j.image };
-        }
-        setNodeData(id, patch);
-        notifyGenUsed();
+      // FRONT — from the typed prompt (or wired-in inputs)
+      const front = await call(prompt, inputs, 'front');
+      if (!front.image) {
+        if (front.upgrade) openPaywall();
+        setNodeData(id, { loading: false, note: front.upgrade ? undefined : (front.error || 'no image returned'), prompt });
+        return;
       }
-      else if (j.upgrade) { openPaywall(); setNodeData(id, { loading: false, note: undefined, prompt }); }
-      else setNodeData(id, { loading: false, note: j.error || 'no image returned' });
+      const patch: Record<string, unknown> = { image: front.image, loading: false, note: undefined, prompt };
+      if (isSketch) patch.views = { ...curViews(), front: front.image };
+      setNodeData(id, patch);
+      notifyGenUsed();
+
+      // SIDE + BACK — only garments, generated FROM the front so they're the same piece
+      if (isSketch) {
+        setNodeData(id, { viewsBusy: true });
+        const [side, back] = await Promise.all([
+          call('This is the exact same garment — reproduce it identically (same design, colour, material, details) but photographed from the side.', [front.image!], 'side'),
+          call('This is the exact same garment — reproduce it identically (same design, colour, material, details) but photographed from the back.', [front.image!], 'back'),
+        ]);
+        const next = { ...curViews() };
+        if (side.image) next.side = side.image;
+        if (back.image) next.back = back.image;
+        setNodeData(id, { views: next, viewsBusy: false });
+        if (side.image || back.image) notifyGenUsed();
+        if (side.upgrade || back.upgrade) openPaywall();
+      }
     } catch (err) {
-      setNodeData(id, { loading: false, note: (err as Error).message || 'generation failed' });
+      setNodeData(id, { loading: false, viewsBusy: false, note: (err as Error).message || 'generation failed' });
     }
   }, [setNodeData]);
 

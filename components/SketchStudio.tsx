@@ -107,7 +107,11 @@ export default function SketchStudio({
     for (const l of doc().layers) { if (!l.visible) continue; c.globalAlpha = l.opacity; c.globalCompositeOperation = l.blend; c.drawImage(l.cv, 0, 0); }
     return out;
   }
-  const emit = () => onView(view, flat().toDataURL('image/png'));
+  const emit = () => {
+    const url = flat().toDataURL('image/png');
+    loadedSrc.current[view] = url; // we just wrote this; don't let the load effect reload/clobber the strokes
+    onView(view, url);
+  };
 
   function snapshot() {
     const d = doc();

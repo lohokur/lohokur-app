@@ -11,7 +11,7 @@ import { VIEWS, type View } from '@/lib/nodeTypes';
 // pop up top-centre. (Absorbs the old Image node — draw · upload · prompt.)
 export default function SketchNode({ id, data, selected }: NodeProps) {
   const { openSketch, promptImage, setNodeImage } = useStudio();
-  const d = data as { image?: string; views?: Partial<Record<View, string>>; loading?: boolean; note?: string; prompt?: string; coachGenerate?: boolean };
+  const d = data as { image?: string; views?: Partial<Record<View, string>>; loading?: boolean; note?: string; prompt?: string; coachGenerate?: boolean; viewsBusy?: boolean };
   const views = d.views ?? {};
   // data.image is the primary/front image — drawing the front, uploading, and
   // prompting all write to it, so it's the source of truth the front view shows.
@@ -59,9 +59,9 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
         {VIEWS.map((v) => (
           <button
             key={v}
-            className={`sk-view${viewImg(v) ? ' has' : ''}${view === v ? ' on' : ''}`}
+            className={`sk-view${viewImg(v) ? ' has' : ''}${view === v ? ' on' : ''}${d.viewsBusy && !viewImg(v) && v !== 'front' ? ' busy' : ''}`}
             onClick={(e) => { e.stopPropagation(); setView(v); if (!viewImg(v)) openSketch(id, v); }}
-            title={viewImg(v) ? `${v[0].toUpperCase()}${v.slice(1)} view` : `Draw the ${v} view`}
+            title={viewImg(v) ? `${v[0].toUpperCase()}${v.slice(1)} view` : (d.viewsBusy && v !== 'front' ? `Generating ${v} view…` : `Draw the ${v} view`)}
           >
             {v[0].toUpperCase()}
           </button>

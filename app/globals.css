@@ -519,6 +519,7 @@ body {
 .sk-view:hover { background: rgba(255,255,255,.1); color: var(--fg); }
 .sk-view.on { background: #fff; color: var(--ink); }
 .sk-view:not(.has) { color: var(--muted); }
+.sk-view.busy { color: var(--mint); animation: sn-pulse 1.1s ease-in-out infinite; }
 
 /* draw / upload — top-right, on hover */
 .sk-tools {
