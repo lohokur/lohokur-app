@@ -1150,7 +1150,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         {canvasReady && !booting && project && nodes.length === 0 && (
           <div className="freshstart">
             <div className="fs-hint">
-              New here? Start with a flow — or press <kbd>S</kbd> sketch · <kbd>V</kbd> visualise · <kbd>I</kbd> image
+              New here? Start with a flow — or press <kbd>S</kbd> sketch · <kbd>V</kbd> visualise
             </div>
             <div className="fs-pills">
               <button onClick={() => seed(['sketch', 'visualise'])}>Sketch → Visualise</button>
