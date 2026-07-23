@@ -10,22 +10,27 @@ export default function TechpackNode({ id, data, selected }: NodeProps) {
   const tp = (data as { techpack?: Techpack }).techpack;
 
   return (
-    <div className={`stage-node techpack-node${selected ? ' selected' : ''}`}>
+    <div className={`fbnode techpack-node${selected ? ' selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="sn-handle" />
-      <div className="sn-head">
-        <span>Techpack</span>
-        <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); openTechpack(id); }} title={tp ? 'Edit tech pack' : 'Open tech pack'} aria-label={tp ? 'Edit tech pack' : 'Open tech pack'}><OpenIcon /></button>
-      </div>
-      <div className="sn-body" onDoubleClick={() => openTechpack(id)}>
+
+      <div className="fb-canvas fb-info" onDoubleClick={() => openTechpack(id)}>
+        <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z" /><path d="M15 2v6h6" /><path d="M9.5 13h6M9.5 17h6" /></svg>
         {tp ? (
           <>
-            <strong className="tp-node-name">{tp.name || 'Untitled garment'}</strong>
-            <span className="tp-node-meta">{tp.poms?.length ?? 0} POM · {tp.materials?.length ?? 0} materials</span>
+            <strong>{tp.name || 'Untitled garment'}</strong>
+            <span>{tp.poms?.length ?? 0} POM · {tp.materials?.length ?? 0} materials</span>
           </>
         ) : (
-          'open the tech-pack editor →'
+          <span className="fb-hint">open the tech-pack editor</span>
         )}
       </div>
+
+      <span className="fb-tag">Techpack</span>
+
+      <div className="fb-tools">
+        <button className="fb-tool nodrag" onClick={(e) => { e.stopPropagation(); openTechpack(id); }} title={tp ? 'Edit tech pack' : 'Open tech pack'} aria-label="Open tech pack"><OpenIcon /></button>
+      </div>
+
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>
   );

@@ -14,34 +14,32 @@ export default function SampleNode({ id, data, selected }: NodeProps) {
   const mode: ProduceMode = d.produceMode ?? 'sample';
   const s = d.sample;
   const m = d.manufacturer;
-  const configured = mode === 'bulk' ? !!m : !!s?.samplerName;
 
   return (
-    <div className={`stage-node produce-node${selected ? ' selected' : ''}`}>
+    <div className={`fbnode produce-node${selected ? ' selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="sn-handle" />
-      <div className="sn-head">
-        <span>Produce</span>
-        <button className="sn-act nodrag" onClick={(e) => { e.stopPropagation(); openSample(id); }} title={configured ? 'Edit production' : 'Set up production'} aria-label={configured ? 'Edit production' : 'Set up production'}><OpenIcon /></button>
-      </div>
-      <div className="sn-body" onDoubleClick={() => openSample(id)}>
+
+      <div className="fb-canvas fb-info" onDoubleClick={() => openSample(id)}>
+        <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z" /><path d="M3 8l9 5 9-5M12 13v9" /></svg>
         {mode === 'bulk' ? (
           m ? (
-            <>
-              <strong className="tp-node-name">{m.name}</strong>
-              <span className="tp-node-meta">${m.unitCost}/unit · MOQ {m.moq} · bulk run</span>
-            </>
+            <><strong>{m.name}</strong><span>${m.unitCost}/unit · MOQ {m.moq} · bulk run</span></>
           ) : (
-            'bulk run — find a factory for this garment →'
+            <span className="fb-hint">bulk run — find a factory</span>
           )
         ) : s?.samplerName ? (
-          <>
-            <strong className="tp-node-name">{s.samplerName}</strong>
-            <span className="tp-node-meta">{s.qty} sample · ${s.sampleCost} · {statusLabel(s.status)}</span>
-          </>
+          <><strong>{s.samplerName}</strong><span>{s.qty} sample · ${s.sampleCost} · {statusLabel(s.status)}</span></>
         ) : (
-          'make one sample of this garment →'
+          <span className="fb-hint">make one sample of this garment</span>
         )}
       </div>
+
+      <span className="fb-tag">Produce</span>
+
+      <div className="fb-tools">
+        <button className="fb-tool nodrag" onClick={(e) => { e.stopPropagation(); openSample(id); }} title="Set up production" aria-label="Set up production"><OpenIcon /></button>
+      </div>
+
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>
   );
