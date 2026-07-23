@@ -3,6 +3,8 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import { OpenIcon } from '@/components/ActionArrow';
+import NodeArt from '@/components/NodeArt';
+import { seedFrom } from '@/lib/node-art';
 import { type Sample, statusLabel } from '@/lib/sample';
 import type { ChosenManufacturer } from '@/lib/manufacturers';
 import type { ProduceMode } from '@/components/ProducePanel';
@@ -20,6 +22,7 @@ export default function SampleNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} className="sn-handle" />
 
       <div className="fb-canvas fb-info" onDoubleClick={() => openSample(id)}>
+        <NodeArt seed={seedFrom(id)} />
         <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z" /><path d="M3 8l9 5 9-5M12 13v9" /></svg>
         {mode === 'bulk' ? (
           m ? (

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import { ActionArrow } from '@/components/ActionArrow';
+import NodeArt from '@/components/NodeArt';
+import { seedFrom } from '@/lib/node-art';
 
 // Worldbuild: plug in a render (or image), prompt it into anything — billboards,
 // editorial shoots, campaign scenes — to brand the product. Full-bleed clean node.
@@ -24,10 +26,13 @@ export default function StudioNode({ id, data, selected }: NodeProps) {
         ) : d.image ? (
           <img src={d.image} alt="" draggable={false} />
         ) : (
-          <div className="fb-blank">
-            <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><ellipse cx="12" cy="12" rx="4" ry="9" /></svg>
-            <span className="fb-hint">connect a render, then prompt a scene</span>
-          </div>
+          <>
+            <NodeArt seed={seedFrom(id)} />
+            <div className="fb-blank">
+              <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><ellipse cx="12" cy="12" rx="4" ry="9" /></svg>
+              <span className="fb-hint">connect a render, then prompt a scene</span>
+            </div>
+          </>
         )}
       </div>
 

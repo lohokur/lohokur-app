@@ -4,6 +4,8 @@ import { useRef } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import { OpenIcon, UploadIcon } from '@/components/ActionArrow';
+import NodeArt from '@/components/NodeArt';
+import { seedFrom } from '@/lib/node-art';
 
 // Pattern maker: extract the garment, then trace the pattern — full-bleed clean node.
 export default function PatternNode({ id, data, selected }: NodeProps) {
@@ -30,10 +32,13 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
         {image ? (
           <img src={image} alt="Pattern" draggable={false} />
         ) : (
-          <div className="fb-blank">
-            <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></svg>
-            <span className="fb-hint">extract a piece · trace the pattern</span>
-          </div>
+          <>
+            <NodeArt seed={seedFrom(id)} />
+            <div className="fb-blank">
+              <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></svg>
+              <span className="fb-hint">extract a piece · trace the pattern</span>
+            </div>
+          </>
         )}
       </div>
 

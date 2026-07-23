@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Handle, Position, useReactFlow, useNodeConnections, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import { ActionArrow } from '@/components/ActionArrow';
+import NodeArt from '@/components/NodeArt';
+import { seedFrom } from '@/lib/node-art';
 
 type Data = {
   image?: string;                     // mirror of the currently shown render (for downstream nodes)
@@ -61,10 +63,13 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
         {card ? (
           <img src={card} alt="Rendered" draggable={false} />
         ) : (
-          <div className="fb-blank">
-            <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.6" /><path d="M3 16.5l5-4.5 4 3.5 3-2.5 6 5" /></svg>
-            <span className="fb-hint">{d.note ?? 'plug in a sketch → press render'}</span>
-          </div>
+          <>
+            <NodeArt seed={seedFrom(id)} />
+            <div className="fb-blank">
+              <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.6" /><path d="M3 16.5l5-4.5 4 3.5 3-2.5 6 5" /></svg>
+              <span className="fb-hint">{d.note ?? 'plug in a sketch → press render'}</span>
+            </div>
+          </>
         )}
         {d.busy && <span className="fb-rendering">rendering…</span>}
       </div>

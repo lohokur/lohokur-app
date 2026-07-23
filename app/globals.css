@@ -585,18 +585,13 @@ body {
 .fb-empty { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--muted); text-align: center; padding: 0 16px; line-height: 1.5; }
 .fb-empty.pulse { color: var(--mint); animation: sn-pulse 1.2s ease-in-out infinite; }
 
-/* blank state — a soft grey generative gradient (like the dashboard cards) with
-   the node's icon overlaid. Only while the node is empty; the image fills once made. */
+/* generative-art background (grainy glow, like the dashboard cards) — sits
+   behind the icon on blank image nodes and on the spec/config cards */
+.fb-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 15px; z-index: 0; }
+.fb-blank, .fb-info > svg, .fb-info > strong, .fb-info > span { position: relative; z-index: 1; }
+
 .fb-blank { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 22px; text-align: center; }
-.fbnode.empty .fb-canvas,
-.sketch-node.empty .sk-canvas {
-  background:
-    radial-gradient(85% 65% at 28% 18%, rgba(143,141,134,.30), transparent 55%),
-    radial-gradient(80% 80% at 78% 32%, rgba(120,122,126,.26), transparent 58%),
-    radial-gradient(120% 110% at 58% 95%, rgba(58,59,62,.55), transparent 62%),
-    linear-gradient(160deg, #2b2c30, #141416);
-}
-.fb-blank .fb-ic { opacity: .7; }
+.fb-blank .fb-ic { opacity: .8; }
 
 /* centred content for the non-image card nodes (Techpack · Produce · Ship) */
 .fb-canvas.fb-info { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; padding: 22px; text-align: center; }

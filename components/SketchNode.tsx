@@ -4,6 +4,8 @@ import { useRef, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import { OpenIcon, ActionArrow, UploadIcon } from '@/components/ActionArrow';
+import NodeArt from '@/components/NodeArt';
+import { seedFrom } from '@/lib/node-art';
 import { VIEWS, type View } from '@/lib/nodeTypes';
 
 // The whole node IS the sketch canvas. On hover: the prompt bar floats over the
@@ -49,10 +51,13 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
         ) : shown ? (
           <img src={shown} alt={`Sketch ${view}`} draggable={false} />
         ) : (
-          <div className="fb-blank">
-            <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l3.6-.9L18.1 8.6a1.8 1.8 0 0 0 0-2.6l-1.1-1.1a1.8 1.8 0 0 0-2.6 0L3.9 15.4 3 19z" /></svg>
-            <span className="fb-hint">{view === 'front' ? 'draw · upload · or prompt' : `draw the ${view} view`}</span>
-          </div>
+          <>
+            <NodeArt seed={seedFrom(id)} />
+            <div className="fb-blank">
+              <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l3.6-.9L18.1 8.6a1.8 1.8 0 0 0 0-2.6l-1.1-1.1a1.8 1.8 0 0 0-2.6 0L3.9 15.4 3 19z" /></svg>
+              <span className="fb-hint">{view === 'front' ? 'draw · upload · or prompt' : `draw the ${view} view`}</span>
+            </div>
+          </>
         )}
       </div>
 
