@@ -77,7 +77,22 @@ export default function SketchStudio({
     if (!docs.current[view]) {
       const bg = makeCanvas('#ffffff');
       const src = views[view];
-      if (src) { const img = new Image(); img.onload = () => { bg.getContext('2d')!.drawImage(img, 0, 0, W, H); composite(); emit(); }; img.src = src; }
+      if (src) {
+        // contain-fit onto the white background, preserving aspect ratio
+        const paint = (img: HTMLImageElement) => {
+          const ctx = bg.getContext('2d')!;
+          const s = Math.min(W / img.width, H / img.height);
+          const w = img.width * s, h = img.height * s;
+          ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+          composite();
+        };
+        const img = new Image();
+        img.crossOrigin = 'anonymous'; // hosted (generated) images are cross-origin — avoid tainting the canvas
+        img.onload = () => paint(img);
+        // if the host doesn't send CORS headers, load again just for display
+        img.onerror = () => { const d = new Image(); d.onload = () => paint(d); d.src = src; };
+        img.src = src;
+      }
       const l1: Layer = { id: nid(), name: 'Layer 1', visible: true, opacity: 1, blend: 'source-over', cv: makeCanvas() };
       docs.current[view] = { layers: [{ id: nid(), name: 'Background', visible: true, opacity: 1, blend: 'source-over', cv: bg }, l1], activeId: l1.id };
     }
@@ -274,7 +289,7 @@ export default function SketchStudio({
               ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3m13-5h-3a2 2 0 0 0-2 2v3" /></svg>
               : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" /></svg>}
           </button>
-          <button className="pe-done" onClick={() => { emit(); onClose(); }}>Done</button>
+          <button className="pe-done" onClick={() => onClose()}>Done</button>
         </div>
       </div>
 

@@ -980,7 +980,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const editingViews = useMemo<Partial<Record<View, string>>>(() => {
     if (!editing) return {};
     const d = nodes.find((n) => n.id === editing)?.data as { image?: string; views?: Partial<Record<View, string>> } | undefined;
-    return d?.views ?? (d?.image ? { front: d.image } : {});
+    // the front view always falls back to the node's primary image (a prompt/upload result)
+    const views = { ...(d?.views ?? {}) };
+    if (!views.front && d?.image) views.front = d.image;
+    return views;
   }, [editing, nodes]);
 
   // the visualised look feeding the Extract node being edited
