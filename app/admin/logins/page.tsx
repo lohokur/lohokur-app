@@ -39,7 +39,7 @@ export default async function AdminLogins() {
         </span>
       </div>
       <p className="adm-sub">
-        {totalLogins.toLocaleString()} sign-ins tracked across {counted} of {rows.length} accounts.
+        {totalLogins.toLocaleString()} sign-in{totalLogins === 1 ? '' : 's'} tracked across {counted} of {rows.length} accounts.
         Counting started when this was shipped — historical logins aren’t included.
       </p>
 
