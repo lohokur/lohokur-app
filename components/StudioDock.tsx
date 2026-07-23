@@ -15,10 +15,11 @@ const ICONS: Record<StageKey, ReactNode> = {
   ), // image / visualise
   studio: (
     <>
-      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
-      <path d="M19 15l.7 1.8L21.5 17.5l-1.8.7L19 20l-.7-1.8L16.5 17.5l1.8-.7z" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <ellipse cx="12" cy="12" rx="4" ry="9" />
     </>
-  ), // magic / sparkle
+  ), // world / globe
   extract: <path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14" />, // crop
   pattern: (
     <>
@@ -89,44 +90,53 @@ export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile
   onLocked?: (k: StageKey) => void;
   comingSoon?: (k: StageKey) => boolean;
 }) {
+  const renderStage = (s: Stage) => {
+    const soon = comingSoon?.(s.key) ?? false;
+    const locked = !soon && (isLocked?.(s.key) ?? false); // coming-soon takes precedence over the paywall lock
+    return (
+      <button
+        key={s.key}
+        className={`dock-btn${soon ? ' soon' : locked ? ' locked' : ''}`}
+        aria-disabled={soon || undefined}
+        onClick={() => { if (soon) return; locked ? onLocked?.(s.key) : onAdd(s.key); }}
+        aria-label={soon ? `${s.label} (coming soon)` : locked ? `${s.label} (upgrade to unlock)` : s.label}
+        title={soon ? `${s.label} — coming soon` : locked ? `${s.label} — upgrade to unlock` : `${s.hint}${HOTKEY_FOR[s.key] ? `  ·  ${HOTKEY_FOR[s.key]!.toUpperCase()}` : ''}`}
+      >
+        <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true">{ICONS[s.key]}</svg>
+        <span className="dock-label">{s.label}{!soon && HOTKEY_FOR[s.key] && <kbd className="dock-key">{HOTKEY_FOR[s.key]!.toUpperCase()}</kbd>}{soon && <span className="dock-soon-label">Coming soon</span>}</span>
+        {soon ? (
+          <span className="dock-soon" aria-hidden="true">Soon</span>
+        ) : locked && (
+          <svg className="dock-lock" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          </svg>
+        )}
+
+        {/* hover reenactment: input → output */}
+        <div className="dock-preview" aria-hidden="true">
+          <div className="np-scene">
+            <svg className="np-ic np-before" viewBox="0 0 24 24">{BEFORE[s.key] ? ICONS[BEFORE[s.key]!] : BLANK}</svg>
+            <svg className="np-ic np-arrow" viewBox="0 0 24 24"><path d="M4 12h13" /><path d="M13 7l5 5-5 5" /></svg>
+            <svg className="np-ic np-after" viewBox="0 0 24 24">{ICONS[s.key]}</svg>
+          </div>
+          <div className="np-cap">{s.label} — {s.hint}</div>
+        </div>
+      </button>
+    );
+  };
+
+  // Worldbuild is a side branch, not part of the linear pipeline — it lives down
+  // by the utilities, just above the sticky note.
+  const worldbuild = stages.find((s) => s.key === 'studio');
+  const pipeline = stages.filter((s) => s.key !== 'studio');
+
   return (
     <div className="dock" role="toolbar" aria-label="Add nodes">
-      {stages.map((s) => {
-        const soon = comingSoon?.(s.key) ?? false;
-        const locked = !soon && (isLocked?.(s.key) ?? false); // coming-soon takes precedence over the paywall lock
-        return (
-          <button
-            key={s.key}
-            className={`dock-btn${soon ? ' soon' : locked ? ' locked' : ''}`}
-            aria-disabled={soon || undefined}
-            onClick={() => { if (soon) return; locked ? onLocked?.(s.key) : onAdd(s.key); }}
-            aria-label={soon ? `${s.label} (coming soon)` : locked ? `${s.label} (upgrade to unlock)` : s.label}
-            title={soon ? `${s.label} — coming soon` : locked ? `${s.label} — upgrade to unlock` : `${s.hint}${HOTKEY_FOR[s.key] ? `  ·  ${HOTKEY_FOR[s.key]!.toUpperCase()}` : ''}`}
-          >
-            <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true">{ICONS[s.key]}</svg>
-            <span className="dock-label">{s.label}{!soon && HOTKEY_FOR[s.key] && <kbd className="dock-key">{HOTKEY_FOR[s.key]!.toUpperCase()}</kbd>}{soon && <span className="dock-soon-label">Coming soon</span>}</span>
-            {soon ? (
-              <span className="dock-soon" aria-hidden="true">Soon</span>
-            ) : locked && (
-              <svg className="dock-lock" viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
-              </svg>
-            )}
-
-            {/* hover reenactment: input → output */}
-            <div className="dock-preview" aria-hidden="true">
-              <div className="np-scene">
-                <svg className="np-ic np-before" viewBox="0 0 24 24">{BEFORE[s.key] ? ICONS[BEFORE[s.key]!] : BLANK}</svg>
-                <svg className="np-ic np-arrow" viewBox="0 0 24 24"><path d="M4 12h13" /><path d="M13 7l5 5-5 5" /></svg>
-                <svg className="np-ic np-after" viewBox="0 0 24 24">{ICONS[s.key]}</svg>
-              </div>
-              <div className="np-cap">{s.label} — {s.hint}</div>
-            </div>
-          </button>
-        );
-      })}
+      {pipeline.map(renderStage)}
 
       <div className="dock-div" />
+
+      {worldbuild && renderStage(worldbuild)}
 
       <button className="dock-btn" onClick={onNote} aria-label="Add sticky note" title="Sticky note  ·  N">
         <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v11l-5 5H4z" /><path d="M20 15h-5v5" /><path d="M8 9h8M8 13h5" /></svg>
