@@ -420,7 +420,7 @@ body {
   border: 1px solid var(--glass-line);
   box-shadow: 0 24px 60px -28px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.08);
 }
-.stage-node.selected { border-color: var(--mint); box-shadow: 0 24px 60px -24px rgba(0,0,0,.9), 0 0 0 1px var(--mint); }
+.stage-node.selected { border-color: #fff; box-shadow: 0 24px 60px -24px rgba(0,0,0,.9), 0 0 0 1px #fff; }
 .sn-head {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   padding: 9px 12px; border-bottom: 1px solid var(--glass-line);
@@ -430,17 +430,17 @@ body {
 .sn-body { padding: 16px 12px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
 /* connection ports — big, obvious, easy to grab */
 .react-flow__handle {
-  width: 13px; height: 13px; background: var(--ink); border: 2px solid var(--mint); border-radius: 50%;
+  width: 13px; height: 13px; background: var(--ink); border: 2px solid rgba(255,255,255,.85); border-radius: 50%;
   transition: transform .15s ease, box-shadow .15s ease; z-index: 3;
 }
 /* invisible enlarged hit area so you don't have to aim precisely */
 .react-flow__handle::after { content: ''; position: absolute; inset: -20px; border-radius: 50%; }
 .react-flow__handle:hover,
-.react-flow__handle.connectionindicator:hover { transform: scale(1.45); box-shadow: 0 0 0 5px rgba(169,240,208,.18); }
+.react-flow__handle.connectionindicator:hover { transform: scale(1.45); box-shadow: 0 0 0 5px rgba(255,255,255,.2); }
 .react-flow__handle-right { right: -7px; }
 .react-flow__handle-left { left: -7px; }
 .stage-node:hover .react-flow__handle,
-.sketch-node:hover .react-flow__handle { box-shadow: 0 0 0 4px rgba(169,240,208,.14); }
+.sketch-node:hover .react-flow__handle { box-shadow: 0 0 0 4px rgba(255,255,255,.14); }
 .react-flow__edge-path { stroke: var(--mint); stroke-width: 1.6; }
 
 /* ---------- loading skeleton nodes (shown while a project's images load) ---------- */
@@ -560,6 +560,86 @@ body {
 .sk-send.coach { animation: sn-pulse 1.2s ease-in-out infinite; }
 .sk-send svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
+/* ── Full-bleed node (shared clean design: Render · Worldbuild · Pattern) ─── */
+.fbnode {
+  position: relative; width: 236px; aspect-ratio: 3 / 4;
+  border-radius: 16px; overflow: visible; background: #0c0e10;
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 16px 40px -22px rgba(0,0,0,.75);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.fbnode.selected { border-color: #fff; box-shadow: 0 0 0 1px #fff, 0 18px 46px -20px rgba(0,0,0,.85); }
+.fbnode .react-flow__handle { border-color: rgba(255,255,255,.85); background: #0c0e10; }
+.fbnode:hover .react-flow__handle { box-shadow: 0 0 0 4px rgba(255,255,255,.14); }
+
+.fb-canvas { position: absolute; inset: 0; display: grid; place-items: center; cursor: pointer;
+  border-radius: 15px; overflow: hidden; background: #0c0e10; }
+.fb-canvas img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fb-empty { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--muted); text-align: center; padding: 0 16px; line-height: 1.5; }
+.fb-empty.pulse { color: var(--mint); animation: sn-pulse 1.2s ease-in-out infinite; }
+
+/* the node's name — a glass chip, top-left, on hover */
+.fb-tag {
+  position: absolute; top: 8px; left: 8px; z-index: 3;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--fg);
+  padding: 5px 9px; border-radius: 9px; background: rgba(10,12,14,.62); border: 1px solid var(--glass-line);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  opacity: 0; transition: opacity .16s ease;
+}
+.fbnode:hover .fb-tag, .fbnode.empty .fb-tag { opacity: 1; }
+
+/* action tools — top-right, on hover */
+.fb-tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 3; opacity: 0; transition: opacity .16s ease; }
+.fbnode:hover .fb-tools, .fbnode.empty .fb-tools { opacity: 1; }
+.fb-tool {
+  width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; cursor: pointer;
+  background: rgba(10,12,14,.62); border: 1px solid var(--glass-line); color: var(--fg);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: background .14s ease, border-color .14s ease;
+}
+.fb-tool:hover:not(:disabled) { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.6); }
+.fb-tool:disabled { opacity: .45; cursor: default; }
+.fb-tool svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fb-tool .sn-spin { width: 15px; height: 15px; }
+
+/* prompt bar — glass, floats over the bottom */
+.fb-prompt {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 3;
+  display: flex; align-items: flex-end; gap: 7px; padding: 7px 7px 7px 11px;
+  background: rgba(12,14,16,.72); border: 1px solid var(--glass-line); border-radius: 13px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px -10px rgba(0,0,0,.6);
+  opacity: 0; transform: translateY(6px); transition: opacity .16s ease, transform .16s ease;
+}
+.fbnode:hover .fb-prompt, .fbnode.empty .fb-prompt, .fb-prompt:focus-within { opacity: 1; transform: none; }
+.fb-prompt textarea {
+  flex: 1; resize: none; background: transparent; border: none; outline: none; color: var(--fg);
+  font-family: var(--sans); font-size: 12px; line-height: 1.35; max-height: 60px; padding: 4px 0;
+}
+.fb-prompt textarea::placeholder { color: var(--muted); }
+.fb-send {
+  flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px;
+  border: none; cursor: pointer; background: #fff; color: var(--ink); transition: opacity .14s ease;
+}
+.fb-send:disabled { background: rgba(255,255,255,.14); color: var(--muted); cursor: default; }
+.fb-send svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* rendering… pill, centred over the card */
+.fb-rendering {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink);
+  padding: 6px 12px; border-radius: 999px; background: var(--mint);
+  animation: sn-pulse 1.2s ease-in-out infinite;
+}
+
+/* input chips — a hover strip along the bottom (Render's plugged-in inputs) */
+.fb-inputs { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 3; display: flex; gap: 6px;
+  opacity: 0; transition: opacity .16s ease; pointer-events: none; }
+.fbnode:hover .fb-inputs { opacity: 1; pointer-events: auto; }
+.fb-in { width: 40px; height: 52px; border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-line);
+  background: rgba(10,12,14,.7); cursor: pointer; padding: 0; flex: none; }
+.fb-in.on { border-color: #fff; box-shadow: 0 0 0 1px #fff; }
+.fb-in img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .sn-thumbs { display: flex; gap: 6px; padding: 8px 10px 10px; }
 .sn-thumbs figure { margin: 0; flex: 1; }
 .sn-thumbs img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--glass-line); }
@@ -621,13 +701,14 @@ body {
 .sn-act {
   width: 30px; height: 30px; border-radius: 50%; padding: 0; flex: none; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,.06); border: 1px solid var(--glass-line); color: var(--mint);
+  background: rgba(10,12,14,.55); border: 1px solid var(--glass-line); color: var(--fg);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   opacity: .55; transition: opacity .16s ease, background .16s, color .16s, border-color .16s, transform .1s;
 }
 .sn-act svg { width: 15px; height: 15px; display: block; }
 /* reveal / emphasise on hover — like the Flora reference */
 .stage-node:hover .sn-act, .stage-node.selected .sn-act, .sn-act.busy, .sn-act:focus-visible { opacity: 1; }
-.sn-act:hover:not(:disabled) { background: var(--mint); color: var(--ink); border-color: var(--mint); }
+.sn-act:hover:not(:disabled) { background: #fff; color: var(--ink); border-color: #fff; }
 .sn-act:active:not(:disabled) { transform: scale(.9); }
 .sn-act:disabled { opacity: 0; cursor: default; }
 .stage-node:hover .sn-act:disabled { opacity: .3; color: var(--muted); }

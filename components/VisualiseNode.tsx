@@ -14,6 +14,8 @@ type Data = {
   note?: string;
 };
 
+// Render: dress the identity in the plugged-in design. Full-bleed clean node —
+// the render fills the card; plugged-in inputs sit as chips along the bottom.
 export default function VisualiseNode({ id, data, selected }: NodeProps) {
   const { visualise } = useStudio();
   const rf = useReactFlow();
@@ -22,7 +24,6 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
   const byInput = d.byInput ?? {};
   const [dragId, setDragId] = useState<string | null>(null);
 
-  // connected inputs that have a thumbnail (image or sketch nodes)
   const inputsRaw = conns
     .map((c) => rf.getNode(c.source))
     .filter(Boolean)
@@ -33,16 +34,14 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
     })
     .filter((x): x is { id: string; kind: string; thumb: string } => !!x);
 
-  // apply the saved order (new inputs append to the end)
   const ids = inputsRaw.map((i) => i.id);
   const saved = (d.order ?? []).filter((x) => ids.includes(x));
   const order = [...saved, ...ids.filter((x) => !saved.includes(x))];
   const inputs = order.map((x) => inputsRaw.find((i) => i.id === x)!).filter(Boolean);
   const primary = inputs[0];
 
-  // the focused input = the one being previewed, else the primary. The big card
-  // shows ONLY an actual render result — never the raw input — so nothing renders
-  // until you press the Render button.
+  // the big card shows ONLY an actual render — never the raw input — so nothing
+  // renders until you press the Render button.
   const focusedId = (d.preview && ids.includes(d.preview)) ? d.preview : primary?.id;
   const card = focusedId ? byInput[focusedId] : d.image;
 
@@ -55,12 +54,21 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
   };
 
   return (
-    <div className={`stage-node visualise-node${selected ? ' selected' : ''}`}>
+    <div className={`fbnode render-node${selected ? ' selected' : ''}${!card ? ' empty' : ''}`}>
       <Handle type="target" position={Position.Left} className="sn-handle" />
-      <div className="sn-head">
-        <span>Render</span>
+
+      <div className="fb-canvas">
+        {card
+          ? <img src={card} alt="Rendered" draggable={false} />
+          : <span className="fb-empty">{d.note ?? 'plug in a sketch → press render'}</span>}
+        {d.busy && <span className="fb-rendering">rendering…</span>}
+      </div>
+
+      <span className="fb-tag">Render</span>
+
+      <div className="fb-tools">
         <button
-          className={`sn-act nodrag${d.busy ? ' busy' : ''}`}
+          className="fb-tool nodrag"
           onClick={(e) => { e.stopPropagation(); visualise(id); }}
           disabled={!!d.busy || !inputs.length}
           title={(d.preview && ids.includes(d.preview)) ? 'Re-render this input' : 'Render'}
@@ -70,28 +78,18 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
         </button>
       </div>
 
-      <div className="sn-draw">
-        {card ? (
-          <img src={card} alt="Rendered" draggable={false} />
-        ) : (
-          <span className="sn-empty">{d.note ?? 'plug in a sketch + image → run'}</span>
-        )}
-        {d.busy === focusedId && <span className="vis-rendering">rendering…</span>}
-      </div>
-
-      {/* plugged-in inputs as cards — drag to reorder (first = primary/processed);
-          click to preview it in the big card. Each keeps its own visualised result. */}
+      {/* plugged-in inputs — hover strip along the bottom. Click to preview; drag to reorder. */}
       {inputs.length > 0 && (
-        <div className="vis-inputs nodrag nowheel">
+        <div className="fb-inputs nodrag nowheel">
           {inputs.map((inp, i) => (
             <button
               key={inp.id}
               draggable
-              className={`vis-in-card vis-${inp.kind}${i === 0 ? ' primary' : ''}${d.preview === inp.id ? ' focus' : ''}${dragId === inp.id ? ' dragging' : ''}${d.busy === inp.id ? ' rendering' : ''}`}
+              className={`fb-in vis-${inp.kind}${d.preview === inp.id ? ' on' : ''}${dragId === inp.id ? ' dragging' : ''}`}
               title={`${inp.kind}${byInput[inp.id] ? ' · rendered' : ''} · click to select (then Render redoes just this) · drag to reorder`}
               onClick={(e) => {
                 e.stopPropagation();
-                const on = d.preview === inp.id;                  // toggle selection
+                const on = d.preview === inp.id;
                 rf.updateNodeData(id, { preview: on ? undefined : inp.id, image: on ? d.image : (byInput[inp.id] ?? d.image) });
               }}
               onDragStart={() => setDragId(inp.id)}
