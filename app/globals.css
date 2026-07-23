@@ -415,19 +415,24 @@ body {
 
 /* node */
 .stage-node {
-  width: 190px; border-radius: 14px; overflow: hidden;
-  background: linear-gradient(rgba(255,255,255,.05), rgba(255,255,255,.015)), rgba(14,16,20,.72);
+  width: 210px; border-radius: 16px; overflow: visible;
+  background: linear-gradient(rgba(255,255,255,.035), rgba(255,255,255,.01)), #0c0e10;
   border: 1px solid var(--glass-line);
-  box-shadow: 0 24px 60px -28px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.08);
+  box-shadow: 0 16px 40px -22px rgba(0,0,0,.75);
+  transition: border-color .16s ease, box-shadow .16s ease;
 }
+.stage-node .react-flow__handle { background: #0c0e10; }
 .stage-node.selected { border-color: #fff; box-shadow: 0 24px 60px -24px rgba(0,0,0,.9), 0 0 0 1px #fff; }
 .sn-head {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  padding: 9px 12px; border-bottom: 1px solid var(--glass-line);
-  font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  padding: 11px 13px; border-bottom: 1px solid var(--glass-line);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--fg);
 }
-.sn-tag { color: var(--muted); font-size: 8.5px; }
-.sn-body { padding: 16px 12px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.sn-tag { color: var(--muted); font-size: 8px; letter-spacing: .1em; }
+.sn-body {
+  padding: 16px 14px; min-height: 66px; font-family: var(--mono); font-size: 10.5px; line-height: 1.5; color: var(--muted);
+  display: flex; flex-direction: column; justify-content: center; gap: 4px;
+}
 /* connection ports — big, obvious, easy to grab */
 .react-flow__handle {
   width: 13px; height: 13px; background: var(--ink); border: 2px solid rgba(255,255,255,.85); border-radius: 50%;

@@ -77,9 +77,10 @@ export default function OnboardingWizard() {
     (async () => {
       try {
         const { data: { user } } = await supabaseBrowser().auth.getUser();
-        // Owner account always sees the survey on login (preview/QA), regardless of onboarded state.
-        const alwaysShow = user?.email?.toLowerCase() === 'lohokur123@gmail.com';
-        if (live) setPhase(user && (alwaysShow || !user.user_metadata?.onboarded_at) ? 'active' : 'hidden');
+        // Preview the survey any time by adding ?survey=1 to the URL; otherwise it
+        // shows once per account (until onboarded), never nagging on every reload.
+        const forced = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('survey');
+        if (live) setPhase(user && (forced || !user.user_metadata?.onboarded_at) ? 'active' : 'hidden');
       } catch {
         if (live) setPhase('hidden');
       }
