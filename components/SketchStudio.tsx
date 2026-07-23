@@ -56,7 +56,7 @@ export default function SketchStudio({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [view, setView] = useState<View>('front');
-  const [full, setFull] = useState(false);
+  const [full, setFull] = useState(true); // immersive full-screen workspace by default (Procreate-like)
   const [, force] = useState(0);
   const rerender = () => force((n) => n + 1);
   const [tool, setTool] = useState<Tool>('brush');

@@ -768,7 +768,7 @@ body {
 .pe-views { display: flex; gap: 4px; }
 .pe-views button { font-family: var(--mono); font-size: 11px; text-transform: capitalize; color: var(--muted);
   background: rgba(255,255,255,.04); border: 1px solid var(--glass-line); border-radius: 7px; padding: 6px 12px; cursor: pointer; }
-.pe-views button.on { color: var(--ink); background: var(--mint); border-color: var(--mint); font-weight: 600; }
+.pe-views button.on { color: var(--ink); background: #fff; border-color: #fff; font-weight: 600; }
 .pe-top-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .pe-top-r > button { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--glass-line);
   background: rgba(255,255,255,.05); color: var(--fg); cursor: pointer; font-size: 15px; }
@@ -776,7 +776,7 @@ body {
 .pe-zoom { display: flex; align-items: center; gap: 2px; }
 .pe-zoom b { font-family: var(--mono); font-size: 11px; min-width: 42px; text-align: center; color: var(--muted); }
 .pe-zoom button { width: 26px; height: 28px; border: 1px solid var(--glass-line); background: rgba(255,255,255,.05); color: var(--fg); border-radius: 6px; cursor: pointer; }
-.pe-done { background: var(--mint) !important; color: var(--ink) !important; border: none !important; width: auto !important; padding: 0 16px; font-weight: 600; font-size: 12px; border-radius: 8px !important; }
+.pe-done { background: #fff !important; color: var(--ink) !important; border: none !important; width: auto !important; padding: 0 16px; font-weight: 600; font-size: 12px; border-radius: 8px !important; }
 
 /* card layout = vertical stack; full layout = three columns */
 .pe-body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
@@ -789,7 +789,7 @@ body {
   border: 1px solid transparent; background: none; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
 .pe-tool svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .pe-tool:hover { background: rgba(255,255,255,.06); color: var(--fg); }
-.pe-tool.on { background: rgba(169,240,208,.16); color: var(--mint); border-color: rgba(169,240,208,.35); }
+.pe-tool.on { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.22); }
 .pe-rail-sp { width: 1px; height: 22px; border-left: 1px solid var(--glass-line); margin: 0 3px; }
 .peditor.full .pe-rail-sp { width: 24px; height: 8px; border-left: none; border-top: 1px solid var(--glass-line); margin: 4px 0; }
 
@@ -807,32 +807,32 @@ body {
   border-top: 1px solid var(--glass-line); background: rgba(255,255,255,.015); }
 .peditor.full .pe-side { width: 254px; max-height: none; border-top: none; border-left: 1px solid var(--glass-line); }
 .pe-panel { padding: 14px; border-bottom: 1px solid var(--glass-line); display: flex; flex-direction: column; gap: 10px; }
-.pe-ph { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--mint);
+.pe-ph { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.5);
   display: flex; align-items: center; justify-content: space-between; }
 .pe-color-row { display: flex; gap: 8px; }
 .pe-color { width: 46px; height: 34px; padding: 0; border: 1px solid var(--glass-line); border-radius: 8px; background: none; cursor: pointer; flex: none; }
 .pe-hex { flex: 1; font-family: var(--mono); font-size: 12px; color: var(--fg); background: rgba(0,0,0,.3); border: 1px solid var(--glass-line); border-radius: 8px; padding: 0 10px; outline: none; }
 .pe-swatches { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
 .pe-swatches button { aspect-ratio: 1; border-radius: 5px; border: 1px solid rgba(255,255,255,.14); cursor: pointer; padding: 0; }
-.pe-swatches button.on { box-shadow: 0 0 0 2px var(--mint); }
+.pe-swatches button.on { box-shadow: 0 0 0 2px #fff; }
 .pe-swatches.recent button { border-radius: 50%; }
 .pe-slider { display: grid; grid-template-columns: 58px 1fr 26px; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .pe-slider.sm { grid-template-columns: 52px 1fr 24px; }
-.pe-slider input[type=range] { width: 100%; accent-color: var(--mint); }
+.pe-slider input[type=range] { width: 100%; accent-color: #fff; }
 .pe-slider b { font-size: 11px; color: var(--fg); text-align: right; }
 .pe-fillmode { display: flex; gap: 6px; }
 .pe-fillmode button { flex: 1; font-family: var(--mono); font-size: 10px; text-transform: uppercase; color: var(--muted); background: rgba(255,255,255,.05); border: 1px solid var(--glass-line); border-radius: 7px; padding: 7px; cursor: pointer; }
-.pe-fillmode button.on { color: var(--ink); background: var(--mint); border-color: var(--mint); font-weight: 600; }
+.pe-fillmode button.on { color: var(--ink); background: #fff; border-color: #fff; font-weight: 600; }
 
 .pe-layers { flex: 1; min-height: 200px; }
 .pe-layer-actions { display: flex; gap: 3px; }
 .pe-layer-actions button { width: 24px; height: 22px; border: 1px solid var(--glass-line); background: rgba(255,255,255,.05); color: var(--fg); border-radius: 5px; cursor: pointer; font-size: 11px; line-height: 1; }
-.pe-layer-actions button:hover { background: rgba(169,240,208,.14); }
+.pe-layer-actions button:hover { background: rgba(255,255,255,.12); }
 .pe-blend { font-family: var(--mono); font-size: 11px; color: var(--fg); background: rgba(0,0,0,.3); border: 1px solid var(--glass-line); border-radius: 7px; padding: 7px 8px; outline: none; }
 .pe-layer-list { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
 .pe-layer { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; }
 .pe-layer:hover { background: rgba(255,255,255,.04); }
-.pe-layer.on { background: rgba(169,240,208,.1); border-color: rgba(169,240,208,.3); }
+.pe-layer.on { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
 .pe-eye { width: 22px; height: 22px; background: none; border: none; cursor: pointer; font-size: 12px; opacity: .85; flex: none; }
 .pe-lname { flex: 1; min-width: 0; font-size: 12px; color: var(--fg); background: none; border: 1px solid transparent; border-radius: 5px; padding: 3px 5px; outline: none; }
 .pe-lname:focus { background: rgba(0,0,0,.3); border-color: var(--glass-line); }
