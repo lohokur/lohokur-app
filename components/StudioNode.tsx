@@ -16,7 +16,7 @@ export default function StudioNode({ id, data, selected }: NodeProps) {
   return (
     <div className={`stage-node studio-node${selected ? ' selected' : ''}`}>
       <Handle type="target" position={Position.Left} className="sn-handle" />
-      <div className="sn-head"><span>Brand studio</span></div>
+      <div className="sn-head"><span>Worldbuild</span></div>
       <div className="sn-draw">
         {d.loading ? (
           <span className="sn-empty pulse">{d.note ?? 'branding…'}</span>

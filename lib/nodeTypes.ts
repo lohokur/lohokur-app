@@ -19,7 +19,7 @@ export type VisResult = { id: string; image: string; inputs: string[] };
 export const STAGES: Stage[] = [
   { key: 'sketch', label: 'Sketch', hint: 'Draw, prompt or drop an idea' },
   { key: 'visualise', label: 'Visualise', hint: 'Render it photoreal' },
-  { key: 'studio', label: 'Brand studio', hint: 'Plug in a visual · prompt it anywhere' },
+  { key: 'studio', label: 'Worldbuild', hint: 'Plug in a visual · prompt it anywhere' },
   { key: 'extract', label: 'Extract', hint: 'Isolate one piece' },
   { key: 'pattern', label: 'Pattern maker', hint: 'Trace a 2D outline' },
   { key: 'techpack', label: 'Techpack', hint: 'Spec · grading · BOM' },
@@ -37,7 +37,7 @@ export const STAGE_MAP: Record<string, Stage> = Object.fromEntries(
 export const STAGE_HOTKEYS: Record<string, StageKey> = {
   s: 'sketch',
   v: 'visualise',
-  b: 'studio',
+  w: 'studio',
   e: 'extract',
   p: 'pattern',
   t: 'techpack',
