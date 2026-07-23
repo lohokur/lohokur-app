@@ -478,6 +478,82 @@ body {
   border: 1px solid var(--glass-line); background: rgba(255,255,255,.02);
 }
 .sn-views span.on { color: var(--ink); background: var(--mint); border-color: var(--mint); }
+
+/* ── Sketch node — the whole node is the canvas ──────────────────────────── */
+.sketch-node {
+  position: relative; width: 236px; aspect-ratio: 3 / 4;
+  border-radius: 16px; overflow: hidden; background: #0c0e10;
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 16px 40px -22px rgba(0,0,0,.75);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.sketch-node.selected { border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint), 0 18px 46px -20px rgba(0,0,0,.85); }
+.sketch-node.empty { background:
+  radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.03), rgba(0,0,0,0)) , #0c0e10; }
+
+.sk-canvas { position: absolute; inset: 0; display: grid; place-items: center; cursor: pointer; }
+.sk-canvas img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sk-empty { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; color: var(--muted); text-align: center; padding: 0 14px; }
+.sk-empty.pulse { color: var(--mint); animation: sn-pulse 1.2s ease-in-out infinite; }
+
+/* front / side / back — floating pill, top-centre, on hover */
+.sk-views {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%) translateY(-4px);
+  display: flex; gap: 3px; padding: 3px; z-index: 3;
+  background: rgba(10,12,14,.62); border: 1px solid var(--glass-line); border-radius: 10px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease;
+}
+.sketch-node:hover .sk-views { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+.sk-view {
+  width: 22px; height: 22px; border-radius: 7px; cursor: pointer;
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .02em;
+  background: transparent; border: none; color: var(--muted); transition: background .14s ease, color .14s ease;
+}
+.sk-view.has { color: var(--fg); }
+.sk-view.has:hover { background: rgba(255,255,255,.08); }
+.sk-view.on { background: var(--mint); color: var(--ink); }
+.sk-view:disabled { opacity: .35; cursor: default; }
+
+/* draw / upload — top-right, on hover */
+.sk-tools {
+  position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 3;
+  opacity: 0; transition: opacity .16s ease;
+}
+.sketch-node:hover .sk-tools, .sketch-node.empty .sk-tools { opacity: 1; }
+.sk-tool {
+  width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; cursor: pointer;
+  background: rgba(10,12,14,.62); border: 1px solid var(--glass-line); color: var(--fg);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: background .14s ease, border-color .14s ease;
+}
+.sk-tool:hover { background: rgba(169,240,208,.16); border-color: rgba(169,240,208,.5); }
+.sk-tool svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* prompt bar — glass, floats over the bottom of the canvas */
+.sk-prompt {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 3;
+  display: flex; align-items: flex-end; gap: 7px; padding: 7px 7px 7px 11px;
+  background: rgba(12,14,16,.72); border: 1px solid var(--glass-line); border-radius: 13px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px -10px rgba(0,0,0,.6);
+  opacity: 0; transform: translateY(6px); transition: opacity .16s ease, transform .16s ease;
+}
+.sketch-node:hover .sk-prompt, .sketch-node.empty .sk-prompt, .sk-prompt:focus-within {
+  opacity: 1; transform: none;
+}
+.sk-prompt textarea {
+  flex: 1; resize: none; background: transparent; border: none; outline: none; color: var(--fg);
+  font-family: var(--sans); font-size: 12.5px; line-height: 1.35; max-height: 66px; padding: 4px 0;
+}
+.sk-prompt textarea::placeholder { color: var(--muted); }
+.sk-send {
+  flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px;
+  border: none; cursor: pointer; background: var(--mint); color: var(--ink); transition: opacity .14s ease;
+}
+.sk-send:disabled { background: rgba(255,255,255,.1); color: var(--muted); cursor: default; }
+.sk-send.coach { animation: sn-pulse 1.2s ease-in-out infinite; }
+.sk-send svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
 .sn-thumbs { display: flex; gap: 6px; padding: 8px 10px 10px; }
 .sn-thumbs figure { margin: 0; flex: 1; }
 .sn-thumbs img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--glass-line); }
