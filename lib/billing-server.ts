@@ -1,6 +1,7 @@
 import 'server-only';
 import { supabaseServer } from './supabase/server';
 import { generationCap, entitlementsFor, type Entitlements } from './entitlements';
+import { readTrial, effectiveTier } from './trial';
 import { isAdmin } from './admin';
 
 // Metering is skipped entirely when there's no Supabase backend (local dev fallback).
@@ -21,7 +22,10 @@ export async function consumeGeneration(cost = 1): Promise<MeterResult> {
   if (!user) return { ok: false, reason: 'unauth' };
 
   const { data: profile } = await sb.from('profiles').select('tier').eq('id', user.id).maybeSingle();
-  const tier = profile?.tier ?? 'free';
+  const baseTier = profile?.tier ?? 'free';
+  // an active trial grants Studio-level caps/model
+  const { onTrial } = readTrial(user.user_metadata as Record<string, unknown>);
+  const tier = effectiveTier(baseTier, onTrial);
   const cap = generationCap(tier);
 
   const { data, error } = await sb.rpc('consume_generation', { p_cap: cap, p_cost: cost });
@@ -44,13 +48,16 @@ export async function refundGeneration(cost = 1): Promise<void> {
 
 export type ProfileView = {
   email: string | null;
-  tier: Entitlements['tier'];
-  entitlements: Entitlements;
+  tier: Entitlements['tier'];      // the account's real plan (free until they pay)
+  entitlements: Entitlements;      // resolved for the EFFECTIVE tier (trial counts as Studio)
   gensUsed: number;
   subscriptionStatus: string | null;
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
   isAdmin: boolean;
+  onTrial: boolean;
+  trialEndsAt: string | null;
+  trialUsed: boolean;
 };
 
 // Full profile + resolved entitlements for the signed-in user (for /profile, /pricing).
@@ -65,14 +72,19 @@ export async function getProfileView(): Promise<ProfileView | null> {
     .eq('id', user.id)
     .maybeSingle();
   const tier = data?.tier ?? 'free';
+  const { onTrial, trialEndsAt, trialUsed } = readTrial(user.user_metadata as Record<string, unknown>);
+  const effTier = effectiveTier(tier, onTrial) as Entitlements['tier'];
   return {
     email: user.email ?? null,
-    tier,
-    entitlements: entitlementsFor(tier),
+    tier: tier as Entitlements['tier'],
+    entitlements: entitlementsFor(effTier),
     gensUsed: data?.gens_used ?? 0,
     subscriptionStatus: data?.subscription_status ?? null,
     currentPeriodEnd: data?.current_period_end ?? null,
     stripeCustomerId: data?.stripe_customer_id ?? null,
     isAdmin: isAdmin(user.email),
+    onTrial,
+    trialEndsAt,
+    trialUsed,
   };
 }

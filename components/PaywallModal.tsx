@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useMe, startCheckout } from '@/lib/use-billing';
+import { useMe, startCheckout, startTrial, notifyGenUsed } from '@/lib/use-billing';
 import { priceFor, TIERS } from '@/lib/entitlements';
+import { TRIAL_DAYS } from '@/lib/trial';
 
 // Tier-aware "you're out of generations" moment. Any generation path can open it
 // via openPaywall() (lib/paywall). Upsells to the next tier with one tap; price
@@ -41,6 +42,19 @@ export default function PaywallModal() {
   const upsell = nextTier
     ? { plan: nextTier, label: TIERS[nextTier].label, price: priceFor(nextTier, 'monthly') }
     : null;
+  // a free user who's never trialed gets the trial instead of a hard upsell
+  const offerTrial = tier === 'free' && me?.trialUsed === false;
+
+  const beginTrial = async () => {
+    setBusy(true); setErr(null);
+    const { error, upgrade: mustUpgrade } = await startTrial();
+    if (error) {
+      if (mustUpgrade) { await startCheckout('studio', 'monthly'); return; }
+      setErr(error); setBusy(false); return;
+    }
+    notifyGenUsed();
+    setBusy(false); setOpen(false); // trial grants a fresh Studio-level cap
+  };
 
   const upgrade = async () => {
     if (!upsell) return;
@@ -54,8 +68,10 @@ export default function PaywallModal() {
       <div className="pw-card" onClick={(e) => e.stopPropagation()}>
         <h2 className="pw-title">You’re out of ink</h2>
         <p className="pw-body">
-          Your ink refills on the 1st.
-          {upsell
+          {offerTrial
+            ? `Start your ${TRIAL_DAYS}-day free trial for 1,000 generations a month and the full production line — no card required.`
+            : 'Your ink refills on the 1st.'}
+          {!offerTrial && upsell
             ? ` Or upgrade to ${upsell.label} for more each month and keep creating now.`
             : ''}
         </p>
@@ -63,7 +79,11 @@ export default function PaywallModal() {
         {err && <p className="pw-err">{err}</p>}
 
         <div className="pw-actions">
-          {upsell ? (
+          {offerTrial ? (
+            <button className="pw-primary" onClick={beginTrial} disabled={busy}>
+              {busy ? 'Starting…' : `Start your ${TRIAL_DAYS}-day free trial`}
+            </button>
+          ) : upsell ? (
             <button className="pw-primary" onClick={upgrade} disabled={busy}>
               {busy ? 'Redirecting…' : `Upgrade to ${upsell.label} — £${upsell.price}/mo`}
             </button>

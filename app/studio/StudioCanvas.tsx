@@ -38,6 +38,9 @@ import StudioTopbar from '@/components/StudioTopbar';
 import StudioDock from '@/components/StudioDock';
 import GenMeter from '@/components/GenMeter';
 import PaywallModal from '@/components/PaywallModal';
+import UnlockModal from '@/components/UnlockModal';
+import TrialBadge from '@/components/TrialBadge';
+import { openUnlock } from '@/lib/unlock';
 import ProfileModal from '@/components/ProfileModal';
 import { openPaywall, blockedByCap } from '@/lib/paywall';
 import { openProfile } from '@/lib/profile';
@@ -374,9 +377,9 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   // Production-line panels are paid — free users get bounced to pricing.
   const gated = useCallback((stage: StageKey) => {
-    if (stageLocked(stage)) { router.push('/pricing'); return true; }
+    if (stageLocked(stage)) { openUnlock(stage); return true; } // value-selling trial/upgrade prompt
     return false;
-  }, [stageLocked, router]);
+  }, [stageLocked]);
   const openSketch = useCallback((id: string) => setEditing(id), []);
   const openTechpack = useCallback((id: string) => { if (gated('techpack')) return; setEditingTechpack(id); }, [gated]);
   const openExtract = useCallback((id: string) => { if (gated('extract')) return; setEditingExtract(id); }, [gated]);
@@ -406,7 +409,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const addNode = useCallback(
     (type: StageKey) => {
       if (stageComingSoon(type)) return; // unreleased — dock shows "coming soon"
-      if (stageLocked(type)) { router.push('/pricing'); return; } // gate premium stages
+      if (stageLocked(type)) { openUnlock(type); return; } // gate premium stages → trial/upgrade prompt
       const id = `${type}-${Date.now().toString(36)}-${counter++}`;
       const nt = CUSTOM[type] ?? 'stage';
 
@@ -1128,14 +1131,16 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
           <Panel position="bottom-left">
             <GenMeter />
+            <TrialBadge />
           </Panel>
 
           <Panel position="center-left">
-            <StudioDock stages={STAGES} onAdd={addNode} onNote={addNote} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={openProfile} isLocked={stageLocked} onLocked={() => router.push('/pricing')} comingSoon={stageComingSoon} />
+            <StudioDock stages={STAGES} onAdd={addNode} onNote={addNote} onLibrary={() => setLibraryOpen((o) => !o)} onProfile={openProfile} isLocked={stageLocked} onLocked={(k) => openUnlock(k)} comingSoon={stageComingSoon} />
           </Panel>
         </ReactFlow>
 
         <PaywallModal />
+        <UnlockModal />
         <ProfileModal />
 
         {canvasReady && !booting && project && nodes.length === 0 && (
