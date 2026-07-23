@@ -36,7 +36,7 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
             <NodeArt seed={seedFrom(id)} />
             <div className="fb-blank">
               <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></svg>
-              <span className="fb-hint">extract a piece · trace the pattern</span>
+              <span className="fb-hint">create a pattern of this product</span>
             </div>
           </>
         )}

@@ -33,7 +33,7 @@ export default function SampleNode({ id, data, selected }: NodeProps) {
         ) : s?.samplerName ? (
           <><strong>{s.samplerName}</strong><span>{s.qty} sample · ${s.sampleCost} · {statusLabel(s.status)}</span></>
         ) : (
-          <span className="fb-hint">make one sample of this garment</span>
+          <span className="fb-hint">create a physical sample of this product</span>
         )}
       </div>
 

@@ -24,7 +24,7 @@ export default function TechpackNode({ id, data, selected }: NodeProps) {
             <span>{tp.poms?.length ?? 0} POM · {tp.materials?.length ?? 0} materials</span>
           </>
         ) : (
-          <span className="fb-hint">open the tech-pack editor</span>
+          <span className="fb-hint">create a techpack of this product</span>
         )}
       </div>
 
