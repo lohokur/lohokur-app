@@ -70,11 +70,15 @@ export default function ExtractPanel({
   image,
   onExtracted,
   onClose,
+  onUseWhole,
+  title = 'Extract',
 }: {
   open: boolean;
   image?: string;
   onExtracted: (dataUrl: string) => void;
   onClose: () => void;
+  onUseWhole?: () => void; // skip picking — use the whole image as-is (e.g. a flat garment)
+  title?: string;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -243,7 +247,7 @@ export default function ExtractPanel({
   return (
     <aside className={`extractpanel${open ? ' open' : ''}`} aria-hidden={!open}>
       <div className="sp-head">
-        <span>Extract</span>
+        <span>{title}</span>
         <button className="sp-x" onClick={onClose} aria-label="Close">×</button>
       </div>
       <div className="ex-stage">
@@ -269,7 +273,12 @@ export default function ExtractPanel({
           <div className="ex-empty">connect a visualised look, then open Extract</div>
         )}
       </div>
-      <div className="ex-status">{status}</div>
+      <div className="ex-status">
+        <span>{status}</span>
+        {onUseWhole && !busy && image && (
+          <button className="ex-whole" onClick={onUseWhole}>skip · use whole image →</button>
+        )}
+      </div>
     </aside>
   );
 }

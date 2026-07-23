@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { openPaywall } from '@/lib/paywall';
 
 type Stage = 'outline' | 'refine' | 'deconstruct' | 'number';
@@ -11,12 +11,14 @@ export default function PatternPanel({
   image,
   onGenerated,
   onClose,
+  autoStart = false,
 }: {
   open: boolean;
   nodeId?: string | null;
   image?: string;
   onGenerated: (dataUrl: string) => void;
   onClose: () => void;
+  autoStart?: boolean; // kick off the outline automatically (used after Extract)
 }) {
   const [working, setWorking] = useState<Stage | null>(null);
   const [status, setStatus] = useState('');
@@ -84,6 +86,18 @@ export default function PatternPanel({
     }
     setWorking(null);
   };
+
+  // Auto-trace the outline once when handed a fresh image (after Extract), so the
+  // pattern is "made automatically within" the combined node.
+  const autoStarted = useRef(false);
+  useEffect(() => { autoStarted.current = false; }, [image]);
+  useEffect(() => {
+    if (open && autoStart && image && !outline && !working && !autoStarted.current) {
+      autoStarted.current = true;
+      run('outline');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, autoStart, image, outline, working]);
 
   // Show the furthest-along artifact: numbered ▸ panels ▸ outline ▸ source garment.
   const shown = numbered ?? panels ?? outline ?? image ?? null;

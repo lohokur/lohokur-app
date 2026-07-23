@@ -71,8 +71,7 @@ const BLANK = <rect x="4" y="4" width="16" height="16" rx="3" strokeDasharray="3
 const BEFORE: Partial<Record<StageKey, StageKey>> = {
   visualise: 'sketch',
   studio: 'sketch',
-  extract: 'visualise',
-  pattern: 'extract',
+  pattern: 'visualise',
   techpack: 'pattern',
   sample: 'techpack',
   manufacture: 'sample',

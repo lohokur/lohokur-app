@@ -20,14 +20,16 @@ export const STAGES: Stage[] = [
   { key: 'sketch', label: 'Sketch', hint: 'Draw, prompt or drop an idea' },
   { key: 'visualise', label: 'Render', hint: 'Make it photoreal' },
   { key: 'studio', label: 'Worldbuild', hint: 'Plug in a visual · prompt it anywhere' },
-  { key: 'extract', label: 'Extract', hint: 'Isolate one piece' },
-  { key: 'pattern', label: 'Pattern maker', hint: 'Trace a 2D outline' },
+  { key: 'pattern', label: 'Pattern maker', hint: 'Extract a piece · trace the pattern' },
   { key: 'techpack', label: 'Techpack', hint: 'Spec · grading · BOM' },
-  { key: 'sample', label: 'Create Sample', hint: 'One sample · ship to you' },
-  { key: 'manufacture', label: 'Manufacture', hint: 'Vetted factory · bulk' },
-  { key: 'retailer', label: 'Retailer', hint: 'Stock it · online or in-store' },
+  { key: 'sample', label: 'Produce', hint: 'One sample or a bulk run' },
   { key: 'ship', label: 'Ship', hint: '3PL or any address' },
 ];
+// Vaulted stages: kept as registered node types so old canvases still render,
+// but no longer offered in the dock / pipeline.
+//   retailer — shelved 2026-07
+//   extract    — folded into the Pattern maker node 2026-07
+//   manufacture — folded into the Produce node (bulk mode) 2026-07
 
 export const STAGE_MAP: Record<string, Stage> = Object.fromEntries(
   STAGES.map((s) => [s.key, s])
@@ -38,12 +40,9 @@ export const STAGE_HOTKEYS: Record<string, StageKey> = {
   s: 'sketch',
   v: 'visualise',
   w: 'studio',
-  e: 'extract',
   p: 'pattern',
   t: 'techpack',
   c: 'sample',
-  m: 'manufacture',
-  r: 'retailer',
   h: 'ship',
 };
 
@@ -62,12 +61,11 @@ export type View = (typeof VIEWS)[number];
 // one-off, then order bulk from the factory.
 export const NEXT: Partial<Record<StageKey, StageKey[]>> = {
   sketch: ['visualise', 'studio'],
-  visualise: ['extract', 'studio'],
-  studio: ['studio', 'extract'],
-  extract: ['pattern', 'studio'],
+  visualise: ['pattern', 'studio'],
+  studio: ['studio', 'pattern'],
+  extract: ['pattern', 'studio'], // vaulted node; kept so old canvases still route
   pattern: ['techpack'],
-  techpack: ['sample', 'manufacture'],
-  sample: ['manufacture', 'ship'],
-  manufacture: ['ship', 'retailer'],
-  ship: ['retailer'],
+  techpack: ['sample'],
+  sample: ['ship'],
+  manufacture: ['ship'], // vaulted node; kept so old canvases still route
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { Techpack } from '@/lib/techpack';
 import { briefFromTechpack, recommendFor, complexity, type ChosenManufacturer } from '@/lib/manufacturers';
 
@@ -10,12 +10,14 @@ export default function ManufacturePanel({
   chosenId,
   onChoose,
   onClose,
+  toggle,
 }: {
   open: boolean;
   techpack?: Partial<Techpack>;
   chosenId?: string;
   onChoose: (m: ChosenManufacturer) => void;
   onClose: () => void;
+  toggle?: ReactNode; // Produce mode switch, rendered under the header
 }) {
   const brief = useMemo(() => briefFromTechpack(techpack), [techpack]);
   const quotes = useMemo(() => recommendFor(brief), [brief]);
@@ -27,9 +29,10 @@ export default function ManufacturePanel({
   return (
     <aside className={`mfpanel${open ? ' open' : ''}`} aria-hidden={!open}>
       <div className="tp-head">
-        <span>Manufacturers</span>
+        <span>Produce</span>
         <button className="sp-x" onClick={onClose} aria-label="Close">×</button>
       </div>
+      {toggle}
 
       <div className="mf-brief">
         <div className="mf-brief-t">Recommended for <b>{label}</b></div>

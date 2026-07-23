@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { Techpack } from '@/lib/techpack';
 import { briefFromTechpack, samplersFor } from '@/lib/manufacturers';
 import { type Sample, type Address, SAMPLE_STATUSES, defaultSample } from '@/lib/sample';
@@ -12,6 +12,7 @@ export default function SamplePanel({
   hasShipNode,
   onChange,
   onClose,
+  toggle,
 }: {
   open: boolean;
   techpack?: Partial<Techpack>;
@@ -19,6 +20,7 @@ export default function SamplePanel({
   hasShipNode?: boolean;
   onChange: (s: Sample) => void;
   onClose: () => void;
+  toggle?: ReactNode; // Produce mode switch, rendered under the header
 }) {
   const sample = value ?? defaultSample();
   const brief = useMemo(() => briefFromTechpack(techpack), [techpack]);
@@ -42,9 +44,10 @@ export default function SamplePanel({
   return (
     <aside className={`mfpanel${open ? ' open' : ''}`} aria-hidden={!open}>
       <div className="tp-head">
-        <span>Create Sample</span>
+        <span>Produce</span>
         <button className="sp-x" onClick={onClose} aria-label="Close">×</button>
       </div>
+      {toggle}
 
       <div className="mf-brief">
         <div className="mf-brief-t">One sample of <b>{label}</b></div>

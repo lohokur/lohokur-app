@@ -47,10 +47,10 @@ import StudioLibrary, { type LibItem } from '@/components/StudioLibrary';
 import { useRouter } from 'next/navigation';
 import TechpackPanel from '@/components/TechpackPanel';
 import ExtractPanel from '@/components/ExtractPanel';
-import PatternPanel from '@/components/PatternPanel';
+import PatternMakerPanel from '@/components/PatternMakerPanel';
 import ManufacturePanel from '@/components/ManufacturePanel';
 import RetailerPanel from '@/components/RetailerPanel';
-import SamplePanel from '@/components/SamplePanel';
+import ProducePanel from '@/components/ProducePanel';
 import { StudioContext } from '@/lib/studio-context';
 import { STAGES, NEXT, STAGE_HOTKEYS, type StageKey, type View } from '@/lib/nodeTypes';
 import type { Techpack } from '@/lib/techpack';
@@ -1050,6 +1050,17 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingSample, nodes, edges]);
 
+  // Produce node: sample-vs-bulk mode + the chosen manufacturer (bulk mode)
+  const editingSampleMode = useMemo<'sample' | 'bulk'>(() => {
+    if (!editingSample) return 'sample';
+    return (nodes.find((n) => n.id === editingSample)?.data as { produceMode?: 'sample' | 'bulk' } | undefined)?.produceMode ?? 'sample';
+  }, [editingSample, nodes]);
+
+  const editingSampleManufacturerId = useMemo<string | undefined>(() => {
+    if (!editingSample) return undefined;
+    return (nodes.find((n) => n.id === editingSample)?.data as { manufacturer?: ChosenManufacturer } | undefined)?.manufacturer?.id;
+  }, [editingSample, nodes]);
+
   if (project === null) {
     return (
       <main className="home">
@@ -1177,6 +1188,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onClose={() => setEditingTechpack(null)}
         />
 
+        {/* legacy Extract nodes (vaulted) still open the standalone extractor */}
         <ExtractPanel
           open={!!editingExtract}
           image={editingExtractImage}
@@ -1184,7 +1196,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onClose={() => setEditingExtract(null)}
         />
 
-        <PatternPanel
+        {/* Pattern maker now extracts first, then traces the pattern automatically */}
+        <PatternMakerPanel
           open={!!editingPattern}
           nodeId={editingPattern}
           image={editingPatternImage}
@@ -1208,12 +1221,17 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           onClose={() => setEditingRetailer(null)}
         />
 
-        <SamplePanel
+        <ProducePanel
           open={!!editingSample}
+          nodeId={editingSample}
           techpack={editingSampleTechpack}
-          value={editingSampleValue}
+          mode={editingSampleMode}
+          sample={editingSampleValue}
+          manufacturerId={editingSampleManufacturerId}
           hasShipNode={editingSampleHasShip}
-          onChange={(s) => { if (editingSample) setNodeData(editingSample, { sample: s }); }}
+          onModeChange={(m) => { if (editingSample) setNodeData(editingSample, { produceMode: m }); }}
+          onSampleChange={(s) => { if (editingSample) setNodeData(editingSample, { sample: s }); }}
+          onChooseManufacturer={(m) => { if (editingSample) setNodeData(editingSample, { manufacturer: m }); }}
           onClose={() => setEditingSample(null)}
         />
       </div>
