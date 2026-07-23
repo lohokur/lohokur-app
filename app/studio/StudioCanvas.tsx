@@ -537,6 +537,10 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
 
   // AI image: text-to-image, or transform/rebrand every image wired into this node
   const promptImage = useCallback(async (id: string, prompt: string) => {
+    const node = nodesRef.current.find((n) => n.id === id);
+    // Sketch prompts are garments → force the on-brand ghost-mannequin product shot.
+    // Worldbuild (studio) stays free-form.
+    const mode = node?.type === 'sketch' ? 'product' : 'freeform';
     const inputs: string[] = [];
     for (const e of edgesRef.current) {
       if (e.target !== id) continue;
@@ -553,7 +557,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       const res = await fetch('/api/imagine', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ prompt, images: inputs }),
+        body: JSON.stringify({ prompt, images: inputs, mode }),
       });
       const j = await res.json();
       if (j.image) { setNodeData(id, { image: j.image, loading: false, note: undefined, prompt }); notifyGenUsed(); }
