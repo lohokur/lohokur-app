@@ -19,7 +19,7 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
   const viewImg = (v: View): string | undefined => (v === 'front' ? front : views[v]);
 
   const [view, setView] = useState<View>('front');
-  const shown = viewImg(view) ?? front;
+  const shown = viewImg(view); // the node card shows exactly the selected view (F/S/B)
   const [text, setText] = useState(d.prompt ?? '');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -42,24 +42,25 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
     >
       <Handle type="target" position={Position.Left} className="sn-handle" />
 
-      {/* the canvas fills the whole node */}
-      <div className="sk-canvas" onDoubleClick={() => openSketch(id)}>
+      {/* the canvas fills the whole node — shows the selected view */}
+      <div className="sk-canvas" onDoubleClick={() => openSketch(id, view)}>
         {d.loading ? (
           <span className="sk-empty pulse">{d.note ?? 'generating…'}</span>
         ) : shown ? (
-          <img src={shown} alt="Sketch" draggable={false} />
+          <img src={shown} alt={`Sketch ${view}`} draggable={false} />
         ) : (
-          <span className="sk-empty">draw · upload · or prompt</span>
+          <span className="sk-empty">{view === 'front' ? 'draw · upload · or prompt' : `draw the ${view} view`}</span>
         )}
       </div>
 
-      {/* front / side / back — pops up on hover */}
+      {/* front / side / back — pops up on hover. Selecting one reflects it in the
+          card; an empty view also opens the pad to draw it. */}
       <div className="sk-views">
         {VIEWS.map((v) => (
           <button
             key={v}
             className={`sk-view${viewImg(v) ? ' has' : ''}${view === v ? ' on' : ''}`}
-            onClick={(e) => { e.stopPropagation(); viewImg(v) ? setView(v) : openSketch(id, v); }}
+            onClick={(e) => { e.stopPropagation(); setView(v); if (!viewImg(v)) openSketch(id, v); }}
             title={viewImg(v) ? `${v[0].toUpperCase()}${v.slice(1)} view` : `Draw the ${v} view`}
           >
             {v[0].toUpperCase()}
@@ -69,7 +70,7 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
 
       {/* draw / upload tools — appear on hover */}
       <div className="sk-tools">
-        <button className="sk-tool nodrag" onClick={(e) => { e.stopPropagation(); openSketch(id); }} title={front ? 'Edit drawing' : 'Draw'} aria-label={front ? 'Edit drawing' : 'Draw'}><OpenIcon /></button>
+        <button className="sk-tool nodrag" onClick={(e) => { e.stopPropagation(); openSketch(id, view); }} title={shown ? 'Edit drawing' : 'Draw'} aria-label={shown ? 'Edit drawing' : 'Draw'}><OpenIcon /></button>
         <button className="sk-tool nodrag" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }} title="Upload an image" aria-label="Upload an image"><UploadIcon /></button>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { loadFile(e.target.files?.[0]); e.currentTarget.value = ''; }} />
       </div>
