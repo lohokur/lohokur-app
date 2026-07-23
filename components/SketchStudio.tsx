@@ -36,7 +36,7 @@ function makeCanvas(fill?: string): HTMLCanvasElement {
 }
 
 export default function SketchStudio({
-  open, nodeId, views, onView, onClose, initialView = 'front',
+  open, nodeId, views, onView, onClose, initialView = 'front', onViewChange,
 }: {
   open: boolean;
   nodeId: string | null;
@@ -44,6 +44,7 @@ export default function SketchStudio({
   onView: (view: View, dataUrl: string) => void;
   onClose: () => void;
   initialView?: View; // which view to open on (F/S/B clicked on the node)
+  onViewChange?: (view: View) => void; // reflect the pad's F/S/B on the node card
 }) {
   const docs = useRef<Partial<Record<View, Doc>>>({});
   const undoStack = useRef<Partial<Record<View, Snap[]>>>({});
@@ -299,7 +300,7 @@ export default function SketchStudio({
         <span className="pe-title">Sketch studio</span>
         <div className="pe-views">
           {VIEWS.map((v) => (
-            <button key={v} className={view === v ? 'on' : ''} onClick={() => setView(v)}>{v}{views[v] ? ' •' : ''}</button>
+            <button key={v} className={view === v ? 'on' : ''} onClick={() => { setView(v); onViewChange?.(v); }}>{v}{views[v] ? ' •' : ''}</button>
           ))}
         </div>
         <div className="pe-top-r">

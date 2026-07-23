@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Handle, Position, useReactFlow, useNodeConnections, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
-import { ActionArrow } from '@/components/ActionArrow';
+import { ActionArrow, RefreshIcon } from '@/components/ActionArrow';
 import NodeArt from '@/components/NodeArt';
 import { seedFrom } from '@/lib/node-art';
 
@@ -83,12 +83,12 @@ export default function VisualiseNode({ id, data, selected }: NodeProps) {
       <div className="fb-tools">
         <button
           className="fb-tool nodrag"
-          onClick={(e) => { e.stopPropagation(); visualise(id); }}
+          onClick={(e) => { e.stopPropagation(); card ? visualise(id, focusedId) : visualise(id); }}
           disabled={!!d.busy || !inputs.length}
-          title={(d.preview && ids.includes(d.preview)) ? 'Re-render this input' : 'Render'}
-          aria-label="Render"
+          title={card ? 'Re-render this look' : 'Render'}
+          aria-label={card ? 'Re-render this look' : 'Render'}
         >
-          {d.busy ? <span className="sn-spin" /> : <ActionArrow />}
+          {d.busy ? <span className="sn-spin" /> : card ? <RefreshIcon /> : <ActionArrow />}
         </button>
       </div>
 

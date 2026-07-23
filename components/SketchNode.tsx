@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import { OpenIcon, ActionArrow, UploadIcon } from '@/components/ActionArrow';
 import NodeArt from '@/components/NodeArt';
@@ -13,14 +13,17 @@ import { VIEWS, type View } from '@/lib/nodeTypes';
 // pop up top-centre. (Absorbs the old Image node — draw · upload · prompt.)
 export default function SketchNode({ id, data, selected }: NodeProps) {
   const { openSketch, promptImage, setNodeImage } = useStudio();
-  const d = data as { image?: string; views?: Partial<Record<View, string>>; loading?: boolean; note?: string; prompt?: string; coachGenerate?: boolean; viewsBusy?: boolean };
+  const rf = useReactFlow();
+  const d = data as { image?: string; views?: Partial<Record<View, string>>; loading?: boolean; note?: string; prompt?: string; coachGenerate?: boolean; viewsBusy?: boolean; view?: View };
   const views = d.views ?? {};
   // data.image is the primary/front image — drawing the front, uploading, and
   // prompting all write to it, so it's the source of truth the front view shows.
   const front = d.image ?? views.front;
   const viewImg = (v: View): string | undefined => (v === 'front' ? front : views[v]);
 
-  const [view, setView] = useState<View>('front');
+  // the shown view lives in node data so the pad's F/S/B stays in sync with the card
+  const view: View = d.view ?? 'front';
+  const setView = (v: View) => rf.updateNodeData(id, { view: v });
   const shown = viewImg(view); // the node card shows exactly the selected view (F/S/B)
   const [text, setText] = useState(d.prompt ?? '');
   const fileRef = useRef<HTMLInputElement>(null);

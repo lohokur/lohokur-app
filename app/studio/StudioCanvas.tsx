@@ -292,7 +292,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   // selected image(s) as style/material reference. Each run appends a card to the
   // node's gallery (kept to the last 20) so you can compare different input combos.
   const visualise = useCallback(
-    async (id: string) => {
+    async (id: string, only?: string) => {
       const node = nodesRef.current.find((n) => n.id === id);
       const data0 = node?.data as { order?: string[]; preview?: string; byInput?: Record<string, string> } | undefined;
       const order = data0?.order ?? [];
@@ -320,10 +320,13 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         return;
       }
 
-      // a selected card → redo just that one; otherwise visualise every input that
+      // explicit target (refresh button re-renders exactly the shown thumbnail);
+      // else a selected card → redo just that one; else visualise every input that
       // doesn't have a render yet (each node gets its own visualisation)
       const focused = data0?.preview && inputs.some((w) => w.id === data0.preview) ? data0.preview : undefined;
-      const targets = focused ? inputs.filter((w) => w.id === focused) : inputs.filter((w) => !byInput[w.id]);
+      const targets = (only && inputs.some((w) => w.id === only))
+        ? inputs.filter((w) => w.id === only)
+        : focused ? inputs.filter((w) => w.id === focused) : inputs.filter((w) => !byInput[w.id]);
       if (!targets.length) {
         setNodeData(id, { note: 'all visualised — tap a card to redo' });
         setTimeout(() => setNodeData(id, { note: undefined }), 2600);
@@ -1211,6 +1214,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           initialView={editingSketchView}
           views={editingViews}
           onView={(view, d) => { if (editing) setNodeView(editing, view, d); }}
+          onViewChange={(v) => { if (editing) setNodeData(editing, { view: v }); }}
           onClose={() => setEditing(null)}
         />
 
