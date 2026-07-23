@@ -550,6 +550,7 @@ body {
 .sn-act:disabled { opacity: 0; cursor: default; }
 .stage-node:hover .sn-act:disabled { opacity: .3; color: var(--muted); }
 .sn-head .sn-act { width: 28px; height: 28px; }
+.sn-acts { display: flex; align-items: center; gap: 6px; }
 .sn-prompt .sn-act { align-self: flex-end; }
 .sn-act.coach { opacity: 1; animation: sn-act-coach 1.5s ease-in-out infinite; }
 @keyframes sn-act-coach {

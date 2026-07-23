@@ -17,8 +17,8 @@ export type Entitlements = {
 // Stage keys mirror lib/nodeTypes.ts. Free is the taster — idea → visual only;
 // the rest of the production line (extract, pattern, techpack, sample,
 // manufacture, retailer, ship, brand studio) unlocks on any paid plan.
-const ALL_STAGES = ['sketch', 'visualise', 'studio', 'image', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'retailer', 'ship'];
-const FREE_STAGES = ['sketch', 'image', 'visualise'];
+const ALL_STAGES = ['sketch', 'visualise', 'studio', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'retailer', 'ship'];
+const FREE_STAGES = ['sketch', 'visualise'];
 
 export const TIERS: Record<Tier, Entitlements> = {
   free:   { tier: 'free',   label: 'Free',   projects: 3,        generations: 20,    seats: 1,  stages: FREE_STAGES },

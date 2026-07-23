@@ -2,7 +2,6 @@ export type StageKey =
   | 'sketch'
   | 'visualise'
   | 'studio'
-  | 'image'
   | 'extract'
   | 'pattern'
   | 'techpack'
@@ -18,10 +17,9 @@ export type VisResult = { id: string; image: string; inputs: string[] };
 
 // The LOHO KUR pipeline, in order. v1 = structure only (no AI yet).
 export const STAGES: Stage[] = [
-  { key: 'sketch', label: 'Sketch', hint: 'Draw or drop an idea' },
+  { key: 'sketch', label: 'Sketch', hint: 'Draw, prompt or drop an idea' },
   { key: 'visualise', label: 'Visualise', hint: 'Render it photoreal' },
   { key: 'studio', label: 'Brand studio', hint: 'Plug in a visual · prompt it anywhere' },
-  { key: 'image', label: 'Image', hint: 'Upload, paste or prompt an image' },
   { key: 'extract', label: 'Extract', hint: 'Isolate one piece' },
   { key: 'pattern', label: 'Pattern maker', hint: 'Trace a 2D outline' },
   { key: 'techpack', label: 'Techpack', hint: 'Spec · grading · BOM' },
@@ -40,7 +38,6 @@ export const STAGE_HOTKEYS: Record<string, StageKey> = {
   s: 'sketch',
   v: 'visualise',
   b: 'studio',
-  i: 'image',
   e: 'extract',
   p: 'pattern',
   t: 'techpack',
@@ -64,10 +61,9 @@ export type View = (typeof VIEWS)[number];
 // both paths converge on Ship. A sample can also feed manufacture: approve the
 // one-off, then order bulk from the factory.
 export const NEXT: Partial<Record<StageKey, StageKey[]>> = {
-  sketch: ['visualise'],
+  sketch: ['visualise', 'studio'],
   visualise: ['extract', 'studio'],
-  image: ['visualise', 'studio'],
-  studio: ['studio', 'extract', 'image'],
+  studio: ['studio', 'extract'],
   extract: ['pattern', 'studio'],
   pattern: ['techpack'],
   techpack: ['sample', 'manufacture'],

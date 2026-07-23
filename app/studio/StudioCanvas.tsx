@@ -25,7 +25,6 @@ import RetailerNode from '@/components/RetailerNode';
 import SampleNode from '@/components/SampleNode';
 import ExtractNode from '@/components/ExtractNode';
 import StudioNode from '@/components/StudioNode';
-import ImageNode from '@/components/ImageNode';
 import GroupNode from '@/components/GroupNode';
 import NoteNode from '@/components/NoteNode';
 import WireEdge from '@/components/WireEdge';
@@ -68,7 +67,6 @@ const nodeTypes = {
   sketch: SketchNode,
   visualise: VisualiseNode,
   studio: StudioNode,
-  image: ImageNode,
   extract: ExtractNode,
   pattern: PatternNode,
   techpack: TechpackNode,
@@ -78,7 +76,7 @@ const nodeTypes = {
   group: GroupNode,
   note: NoteNode,
 };
-const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', studio: 'studio', image: 'image', extract: 'extract', pattern: 'pattern', techpack: 'techpack', sample: 'sample', manufacture: 'manufacture', retailer: 'retailer' };
+const CUSTOM: Record<string, string> = { sketch: 'sketch', visualise: 'visualise', studio: 'studio', extract: 'extract', pattern: 'pattern', techpack: 'techpack', sample: 'sample', manufacture: 'manufacture', retailer: 'retailer' };
 const edgeTypes = { wire: WireEdge };
 let counter = 1;
 
@@ -212,7 +210,13 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       setDataProg(0.5); // project fetched
       if (p) {
         savedViewport.current = (p.flow as { viewport?: { x: number; y: number; zoom: number } } | undefined)?.viewport;
-        const ns = (p.flow?.nodes as Node[]) ?? [];
+        // Migrate legacy 'image' nodes (now merged into Sketch) so old canvases still render.
+        const ns = ((p.flow?.nodes as Node[]) ?? []).map((n) => {
+          if (n.type !== 'image') return n;
+          const d = (n.data ?? {}) as { image?: string; views?: Record<string, string> };
+          const views = d.views ?? (d.image ? { front: d.image } : undefined);
+          return { ...n, type: 'sketch', data: { ...d, type: 'sketch', ...(views ? { views } : {}) } } as Node;
+        });
         const es = ((p.flow?.edges as Edge[]) ?? []).map((e) => ({ ...e, type: 'wire' as const, animated: false }));
         // Paint shaped skeleton placeholders at each node's spot right away, then
         // reveal — don't hold the loader hostage to the image bytes.
@@ -305,7 +309,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         .map((n) => {
           const nd = n.data as { image?: string; views?: Record<string, string> };
           const img = nd.image ?? nd.views?.front;
-          return img ? { id: n.id, kind: (n.type as string) || 'image', img } : null;
+          return img ? { id: n.id, kind: (n.type as string) || 'sketch', img } : null;
         })
         .filter((x): x is { id: string; kind: string; img: string } => !!x);
 
@@ -498,14 +502,14 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [addNode, addNote, editing, editingTechpack, editingExtract, editingPattern, editingManufacture, editingRetailer, editingSample, settingsOpen, libraryOpen]);
 
-  // drop an image straight onto the canvas (paste / upload) as a ready Image node
+  // drop an image straight onto the canvas (paste / upload) as a ready Sketch node
   const addImageNode = useCallback((image: string) => {
-    const id = `image-${Date.now().toString(36)}-${counter++}`;
+    const id = `sketch-${Date.now().toString(36)}-${counter++}`;
     const center = rf.current?.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
     const position = center ? { x: center.x - 190, y: center.y - 70 } : { x: 160, y: 120 };
     setNodes((ns) => [
       ...ns.map((n) => (n.selected ? { ...n, selected: false } : n)),
-      { id, type: 'image', position, data: { type: 'image', image }, selected: true, className: 'spawn-flash' },
+      { id, type: 'sketch', position, data: { type: 'sketch', image, views: { front: image } }, selected: true, className: 'spawn-flash' },
     ]);
     setTimeout(() => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, className: undefined } : n))), 1100);
   }, [setNodes]);
@@ -612,7 +616,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         const t = (n?.data as { type?: StageKey } | undefined)?.type;
         const prompt = (n?.data as { prompt?: string } | undefined)?.prompt;
         if (t === 'visualise') await visualise(id);
-        else if ((t === 'image' || t === 'studio') && prompt?.trim()) await promptImage(id, prompt);
+        else if ((t === 'sketch' || t === 'studio') && prompt?.trim()) await promptImage(id, prompt);
         else continue;
         // let React commit the fresh image into nodesRef before the next node reads it
         await new Promise((r) => setTimeout(r, 40));
@@ -733,7 +737,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     if (!url) return;
     const href = url.startsWith('data:') ? url : await urlToDataUrl(url).catch(() => url);
     const a = document.createElement('a');
-    const type = (n?.data as { type?: string } | undefined)?.type ?? 'image';
+    const type = (n?.data as { type?: string } | undefined)?.type ?? 'sketch';
     a.href = href; a.download = `${type}-${id}.png`;
     document.body.appendChild(a); a.click(); a.remove();
   }, []);

@@ -19,14 +19,6 @@ const ICONS: Record<StageKey, ReactNode> = {
       <path d="M19 15l.7 1.8L21.5 17.5l-1.8.7L19 20l-.7-1.8L16.5 17.5l1.8-.7z" />
     </>
   ), // magic / sparkle
-  image: (
-    <>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9" r="1.5" />
-      <path d="M3 16.5l5-4.5 4 3.5 3-2.5 6 5" />
-      <path d="M17 3.5v4M15 5.5h4" />
-    </>
-  ), // picture with +
   extract: <path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14" />, // crop
   pattern: (
     <>
@@ -78,7 +70,7 @@ const BLANK = <rect x="4" y="4" width="16" height="16" rx="3" strokeDasharray="3
 // (input → output). Stages with no entry start from BLANK.
 const BEFORE: Partial<Record<StageKey, StageKey>> = {
   visualise: 'sketch',
-  studio: 'image',
+  studio: 'sketch',
   extract: 'visualise',
   pattern: 'extract',
   techpack: 'pattern',
