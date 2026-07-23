@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import NodeArt from '@/components/NodeArt';
 import { HOTKEY_FOR, type Stage, type StageKey } from '@/lib/nodeTypes';
 
 // line icons (24x24, stroke) for each pipeline stage
@@ -132,6 +133,7 @@ export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile
 
   return (
     <div className="dock" role="toolbar" aria-label="Add nodes">
+      <NodeArt seed={4207} w={90} h={720} className="dock-art" />
       {pipeline.map(renderStage)}
 
       <div className="dock-div" />

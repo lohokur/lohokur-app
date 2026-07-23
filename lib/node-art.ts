@@ -12,11 +12,12 @@ function paintArt(cv: HTMLCanvasElement, cols: string[], seed: number) {
   const R = mk(seed + 7);
   const base = hexc(cols[cols.length - 1] || '#101012');
   x.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`; x.fillRect(0, 0, w, h);
-  // glowing radial blooms (additive) — the "highlighter" light
-  for (let i = 0; i < 7; i++) {
-    const cx = R() * w, cy = R() * h, rad = (0.25 + R() * 0.6) * w;
+  // glowing radial blooms (additive) — the "highlighter" light, kept subtle so
+  // the card stays dark/moody (like the dashboard) and text stays legible
+  for (let i = 0; i < 6; i++) {
+    const cx = R() * w, cy = R() * h, rad = (0.25 + R() * 0.55) * w;
     const g = x.createRadialGradient(cx, cy, 0, cx, cy, rad), c = cols[i % cols.length];
-    g.addColorStop(0, c + 'cc'); g.addColorStop(1, c + '00');
+    g.addColorStop(0, c + '80'); g.addColorStop(1, c + '00');
     x.globalCompositeOperation = 'lighter'; x.fillStyle = g; x.beginPath(); x.arc(cx, cy, rad, 0, 7); x.fill();
   }
   // faint diagonal streaks
@@ -34,9 +35,11 @@ function paintArt(cv: HTMLCanvasElement, cols: string[], seed: number) {
   const sg = x.createLinearGradient(0, 0, 0, h);
   sg.addColorStop(0, 'rgba(255,255,255,.16)'); sg.addColorStop(.25, 'rgba(255,255,255,0)'); sg.addColorStop(1, 'rgba(0,0,0,.28)');
   x.fillStyle = sg; x.fillRect(0, 0, w, h);
-  // vignette — darken the edges so the glow reads as a centred highlight (and text stays legible)
-  const vg = x.createRadialGradient(w / 2, h * 0.52, w * 0.15, w / 2, h * 0.52, w * 0.95);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.7, 'rgba(0,0,0,.12)'); vg.addColorStop(1, 'rgba(0,0,0,.5)');
+  // overall darkening + vignette so the card reads dark/moody with a glow accent,
+  // keeping the centred icon and text legible
+  x.fillStyle = 'rgba(10,11,13,.42)'; x.fillRect(0, 0, w, h);
+  const vg = x.createRadialGradient(w / 2, h * 0.5, w * 0.1, w / 2, h * 0.5, w * 1.0);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.65, 'rgba(0,0,0,.22)'); vg.addColorStop(1, 'rgba(0,0,0,.62)');
   x.fillStyle = vg; x.fillRect(0, 0, w, h);
 }
 
