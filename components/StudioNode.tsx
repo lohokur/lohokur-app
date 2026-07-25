@@ -1,23 +1,44 @@
 'use client';
 
-import { useState } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { useRef, useState } from 'react';
+import { Handle, Position, useReactFlow, useNodeConnections, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
-import { ActionArrow } from '@/components/ActionArrow';
+import { ActionArrow, UploadIcon } from '@/components/ActionArrow';
 import NodeArt from '@/components/NodeArt';
 import { seedFrom } from '@/lib/node-art';
 
-// Worldbuild: plug in a render (or image), prompt it into anything — billboards,
-// editorial shoots, campaign scenes — to brand the product. Full-bleed clean node.
+// Worldbuild: plug in a render (or upload/drop an image), prompt it into anything —
+// billboards, editorial shoots, campaign scenes. It works with whatever's connected
+// into it, and you can also give it an image directly. Full-bleed clean node.
 export default function StudioNode({ id, data, selected }: NodeProps) {
-  const { promptImage } = useStudio();
+  const { promptImage, setNodeImage } = useStudio();
+  const rf = useReactFlow();
+  const conns = useNodeConnections({ id, handleType: 'target' });
   const d = data as { image?: string; loading?: boolean; note?: string; prompt?: string };
   const [text, setText] = useState(d.prompt ?? '');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // does an upstream node actually carry an image to work with?
+  const hasInput = conns.some((c) => {
+    const nd = rf.getNode(c.source)?.data as { image?: string; views?: Record<string, string> } | undefined;
+    return !!(nd?.image ?? nd?.views?.front);
+  }) || !!d.image;
+
   const submit = () => { if (text.trim() && !d.loading) promptImage(id, text.trim()); };
+  const load = (f?: File | null) => {
+    if (!f || !/^image\//.test(f.type)) return;
+    const fr = new FileReader();
+    fr.onload = () => setNodeImage(id, fr.result as string);
+    fr.readAsDataURL(f);
+  };
   const empty = !d.image && !d.loading;
 
   return (
-    <div className={`fbnode worldbuild-node${selected ? ' selected' : ''}${empty ? ' empty' : ''}`}>
+    <div
+      className={`fbnode worldbuild-node${selected ? ' selected' : ''}${empty ? ' empty' : ''}`}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); load(e.dataTransfer.files?.[0]); }}
+    >
       <Handle type="target" position={Position.Left} className="sn-handle" />
 
       <div className="fb-canvas">
@@ -33,7 +54,7 @@ export default function StudioNode({ id, data, selected }: NodeProps) {
             <NodeArt seed={seedFrom(id)} />
             <div className="fb-blank">
               <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><ellipse cx="12" cy="12" rx="4" ry="9" /></svg>
-              <span className="fb-hint">connect a render, then prompt a scene</span>
+              <span className="fb-hint">{d.note ?? 'connect a render or upload an image, then prompt a scene'}</span>
             </div>
           </>
         )}
@@ -41,11 +62,16 @@ export default function StudioNode({ id, data, selected }: NodeProps) {
 
       <span className="fb-tag">Worldbuild</span>
 
+      <div className="fb-tools">
+        <button className="fb-tool nodrag" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }} title={d.image ? 'Replace image' : 'Upload an image'} aria-label="Upload an image"><UploadIcon /></button>
+        <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { load(e.target.files?.[0]); e.currentTarget.value = ''; }} />
+      </div>
+
       <div className="fb-prompt nodrag nowheel">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="on a billboard at night; editorial cover; worn on a city street…"
+          placeholder={hasInput ? 'on a billboard at night; editorial cover; worn on a city street…' : 'connect a render or upload an image first…'}
           rows={1}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
         />

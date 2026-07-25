@@ -1,124 +1,102 @@
 'use client';
 
-import { useState } from 'react';
 import { Handle, Position, useReactFlow, useNodeConnections, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import { ActionArrow, RefreshIcon } from '@/components/ActionArrow';
 import NodeArt from '@/components/NodeArt';
+import RenderProgress from '@/components/RenderProgress';
 import { seedFrom } from '@/lib/node-art';
+import { VIEWS, type View } from '@/lib/nodeTypes';
 
 type Data = {
-  image?: string;                     // mirror of the currently shown render (for downstream nodes)
-  byInput?: Record<string, string>;   // input node-id → its visualised result (never dropped on switch)
-  order?: string[];                   // input node-ids, first = primary (shown + processed)
-  preview?: string;                   // which input is focused in the big card (defaults to primary)
-  busy?: string;                      // the input node-id currently rendering (only that card is busy)
+  byView?: Partial<Record<View, string>>; // rendered image per garment view
+  view?: View;                            // which view is shown on the card
+  busyView?: View;                        // the view currently rendering
+  image?: string;                         // mirror of the front render (for downstream nodes)
   note?: string;
 };
 
-// Render: dress the identity in the plugged-in design. Full-bleed clean node —
-// the render fills the card; plugged-in inputs sit as chips along the bottom.
+// Render: dress the identity in the plugged-in design. Mirrors the sketch's views —
+// Front always, Side/Back only when a connected input carries that view.
 export default function VisualiseNode({ id, data, selected }: NodeProps) {
   const { visualise } = useStudio();
   const rf = useReactFlow();
   const conns = useNodeConnections({ id, handleType: 'target' });
   const d = data as Data;
-  const byInput = d.byInput ?? {};
-  const [dragId, setDragId] = useState<string | null>(null);
+  const byView = d.byView ?? {};
+  const view: View = d.view ?? 'front';
+  const setView = (v: View) => rf.updateNodeData(id, { view: v });
 
-  const inputsRaw = conns
+  // which views the plugged-in inputs can supply (front falls back to the card image)
+  const inputs = conns
     .map((c) => rf.getNode(c.source))
     .filter(Boolean)
     .map((n) => {
-      const nd = n!.data as { image?: string; views?: Record<string, string> };
-      const thumb = nd.image ?? nd.views?.front;
-      return thumb ? { id: n!.id, kind: (n!.type as string) || 'image', thumb } : null;
-    })
-    .filter((x): x is { id: string; kind: string; thumb: string } => !!x);
+      const nd = n!.data as { image?: string; views?: Partial<Record<View, string>> };
+      return { front: nd.image ?? nd.views?.front, side: nd.views?.side, back: nd.views?.back } as Partial<Record<View, string>>;
+    });
+  const hasInputs = inputs.length > 0;
+  const viewAvailable = (v: View) => inputs.some((i) => i[v]);
+  // show a tab if the source has that view, or we already rendered it (front always)
+  const tabs = VIEWS.filter((v) => v === 'front' || viewAvailable(v) || byView[v]);
 
-  const ids = inputsRaw.map((i) => i.id);
-  const saved = (d.order ?? []).filter((x) => ids.includes(x));
-  const order = [...saved, ...ids.filter((x) => !saved.includes(x))];
-  const inputs = order.map((x) => inputsRaw.find((i) => i.id === x)!).filter(Boolean);
-  const primary = inputs[0];
-
-  // the big card shows ONLY an actual render — never the raw input — so nothing
-  // renders until you press the Render button.
-  const focusedId = (d.preview && ids.includes(d.preview)) ? d.preview : primary?.id;
-  const card = focusedId ? byInput[focusedId] : d.image;
-
-  const reorder = (targetId: string) => {
-    if (!dragId || dragId === targetId) return;
-    const next = order.filter((x) => x !== dragId);
-    next.splice(next.indexOf(targetId), 0, dragId);
-    rf.updateNodeData(id, { order: next });
-    setDragId(null);
-  };
+  const card = byView[view];
+  const busyHere = d.busyView === view;
+  const rendering = !!d.busyView;
 
   return (
     <div className={`fbnode render-node${selected ? ' selected' : ''}${!card ? ' empty' : ''}`}>
       <Handle type="target" position={Position.Left} className="sn-handle" />
 
+      {/* front / back / side — pops up above the card like the sketch node */}
+      {tabs.length > 1 && (
+        <div className="sk-views rn-views">
+          {tabs.map((v) => (
+            <button
+              key={v}
+              className={`sk-view${byView[v] ? ' has' : ''}${view === v ? ' on' : ''}${d.busyView === v ? ' busy' : ''}`}
+              onClick={(e) => { e.stopPropagation(); setView(v); }}
+              title={byView[v] ? `${v} render` : viewAvailable(v) ? `render the ${v}` : `no ${v} to render`}
+            >
+              {v[0].toUpperCase() + v.slice(1)}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="fb-canvas">
-        {d.busy ? (
+        {busyHere ? (
           <>
             <NodeArt seed={seedFrom(id)} animate />
-            <div className="fb-blank"><span className="fb-hint">rendering…</span></div>
+            <RenderProgress />
+            <div className="fb-blank"><span className="fb-hint">modelling {view}…</span></div>
           </>
         ) : card ? (
-          <img src={card} alt="Rendered" draggable={false} />
+          <img src={card} alt={`Model ${view}`} draggable={false} />
         ) : (
           <>
             <NodeArt seed={seedFrom(id)} />
             <div className="fb-blank">
               <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.6" /><path d="M3 16.5l5-4.5 4 3.5 3-2.5 6 5" /></svg>
-              <span className="fb-hint">{d.note ?? 'plug in a sketch → press render'}</span>
+              <span className="fb-hint">{d.note ?? (viewAvailable(view) ? `model the ${view}` : 'plug in a sketch → place on a model')}</span>
             </div>
           </>
         )}
       </div>
 
-      <span className="fb-tag">Render</span>
+      <span className="fb-tag">Model</span>
 
       <div className="fb-tools">
         <button
           className="fb-tool nodrag"
-          onClick={(e) => { e.stopPropagation(); card ? visualise(id, focusedId) : visualise(id); }}
-          disabled={!!d.busy || !inputs.length}
-          title={card ? 'Re-render this look' : 'Render'}
-          aria-label={card ? 'Re-render this look' : 'Render'}
+          onClick={(e) => { e.stopPropagation(); card ? visualise(id, view) : visualise(id); }}
+          disabled={rendering || !hasInputs}
+          title={card ? 'Re-model this view' : 'Place on model'}
+          aria-label={card ? 'Re-model this view' : 'Place on model'}
         >
-          {d.busy ? <span className="sn-spin" /> : card ? <RefreshIcon /> : <ActionArrow />}
+          {rendering ? <span className="sn-spin" /> : card ? <RefreshIcon /> : <ActionArrow />}
         </button>
       </div>
-
-      {/* plugged-in inputs — hover strip along the bottom. Click to preview; drag to reorder. */}
-      {inputs.length > 0 && (
-        <div className="fb-inputs nodrag nowheel">
-          {inputs.map((inp, i) => (
-            <button
-              key={inp.id}
-              draggable
-              className={`fb-in vis-${inp.kind}${d.preview === inp.id ? ' on' : ''}${dragId === inp.id ? ' dragging' : ''}`}
-              title={`${inp.kind}${byInput[inp.id] ? ' · rendered' : ''} · click to select (then Render redoes just this) · drag to reorder`}
-              onClick={(e) => {
-                e.stopPropagation();
-                const on = d.preview === inp.id;
-                rf.updateNodeData(id, { preview: on ? undefined : inp.id, image: on ? d.image : (byInput[inp.id] ?? d.image) });
-              }}
-              onDragStart={() => setDragId(inp.id)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => { e.preventDefault(); reorder(inp.id); }}
-              onDragEnd={() => setDragId(null)}
-            >
-              <img src={byInput[inp.id] ?? inp.thumb} alt="" draggable={false} />
-              {i === 0 && <span className="vis-primary-dot" />}
-              {byInput[inp.id] && <span className="vis-done-dot" />}
-              {d.busy === inp.id && <span className="vis-spin" />}
-            </button>
-          ))}
-        </div>
-      )}
 
       <Handle type="source" position={Position.Right} className="sn-handle" />
     </div>

@@ -5,7 +5,7 @@ import type { View } from '@/lib/nodeTypes';
 
 export type StudioCtx = {
   openSketch: (id: string, view?: View) => void;
-  visualise: (id: string, only?: string) => void;
+  visualise: (id: string, onlyView?: View) => void;
   openTechpack: (id: string) => void;
   openExtract: (id: string) => void;
   openPattern: (id: string) => void;

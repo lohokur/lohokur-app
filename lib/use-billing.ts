@@ -82,11 +82,11 @@ export async function startTrial(): Promise<{ error: string | null; upgrade: boo
 }
 
 // Redirect to Stripe Checkout for a paid plan.
-export async function startCheckout(plan: 'studio' | 'pro' | 'brand', cadence: 'monthly' | 'annual'): Promise<string | null> {
+export async function startCheckout(plan: 'studio' | 'pro' | 'brand', cadence: 'monthly' | 'annual', opts?: { trial?: boolean }): Promise<string | null> {
   const res = await fetch('/api/billing/checkout', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ plan, cadence }),
+    body: JSON.stringify({ plan, cadence, trial: opts?.trial }),
   });
   const data = await res.json().catch(() => ({}));
   if (data.url) { window.location.href = data.url; return null; }

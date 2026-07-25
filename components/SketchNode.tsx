@@ -77,7 +77,7 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
             onClick={(e) => { e.stopPropagation(); setView(v); if (!viewImg(v)) openSketch(id, v); }}
             title={viewImg(v) ? `${v[0].toUpperCase()}${v.slice(1)} view` : (d.viewsBusy && v !== 'front' ? `Generating ${v} view…` : `Draw the ${v} view`)}
           >
-            {v[0].toUpperCase()}
+            {v[0].toUpperCase() + v.slice(1)}
           </button>
         ))}
       </div>

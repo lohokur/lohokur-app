@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useMe, startCheckout, startTrial, notifyGenUsed } from '@/lib/use-billing';
+import { useMe, startCheckout } from '@/lib/use-billing';
 import { priceFor, TIERS } from '@/lib/entitlements';
 import { TRIAL_DAYS } from '@/lib/trial';
 
@@ -37,23 +37,23 @@ export default function PaywallModal() {
 
   if (!open) return null;
 
-  const tier = me?.tier || 'free';
+  // owner tier-preview override (set by the studio toggle) so the paywall reflects
+  // the tier being previewed, not the owner's real plan
+  const previewTier = typeof window !== 'undefined' ? localStorage.getItem('lk-tier-override') : null;
+  const tier = previewTier || me?.tier || 'free';
   const nextTier = NEXT_TIER[tier] ?? null;
   const upsell = nextTier
     ? { plan: nextTier, label: TIERS[nextTier].label, price: priceFor(nextTier, 'monthly') }
     : null;
   // a free user who's never trialed gets the trial instead of a hard upsell
-  const offerTrial = tier === 'free' && me?.trialUsed === false;
+  const offerTrial = tier === 'free' && (previewTier === 'free' || me?.trialUsed === false);
 
+  // Card-on-file 7-day trial: send them to Stripe Checkout with a 7-day trial —
+  // the card is collected now, the first charge lands in 7 days.
   const beginTrial = async () => {
     setBusy(true); setErr(null);
-    const { error, upgrade: mustUpgrade } = await startTrial();
-    if (error) {
-      if (mustUpgrade) { await startCheckout('studio', 'monthly'); return; }
-      setErr(error); setBusy(false); return;
-    }
-    notifyGenUsed();
-    setBusy(false); setOpen(false); // trial grants a fresh Studio-level cap
+    const error = await startCheckout('studio', 'monthly', { trial: true });
+    if (error) { setErr(error); setBusy(false); } // otherwise startCheckout redirects to Stripe
   };
 
   const upgrade = async () => {
@@ -66,10 +66,10 @@ export default function PaywallModal() {
   return (
     <div className="pw-scrim" onClick={() => setOpen(false)}>
       <div className="pw-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="pw-title">You’re out of ink</h2>
+        <h2 className="pw-title">{offerTrial ? 'Start your free trial' : 'You’re out of ink'}</h2>
         <p className="pw-body">
           {offerTrial
-            ? `Start your ${TRIAL_DAYS}-day free trial for 1,000 generations a month and the full production line — no card required.`
+            ? `Try Studio free for ${TRIAL_DAYS} days — 1,000 generations a month, unlimited nodes and the full production line. Add your card now; your first payment is ${TRIAL_DAYS} days from today and you can cancel anytime before then.`
             : 'Your ink refills on the 1st.'}
           {!offerTrial && upsell
             ? ` Or upgrade to ${upsell.label} for more each month and keep creating now.`

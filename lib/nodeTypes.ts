@@ -18,7 +18,7 @@ export type VisResult = { id: string; image: string; inputs: string[] };
 // The LOHO KUR pipeline, in order. v1 = structure only (no AI yet).
 export const STAGES: Stage[] = [
   { key: 'sketch', label: 'Sketch', hint: 'Draw, prompt or drop an idea' },
-  { key: 'visualise', label: 'Render', hint: 'Make it photoreal' },
+  { key: 'visualise', label: 'Model', hint: 'Place the garment on a model' },
   { key: 'studio', label: 'Worldbuild', hint: 'Plug in a visual · prompt it anywhere' },
   { key: 'pattern', label: 'Pattern maker', hint: 'Extract a piece · trace the pattern' },
   { key: 'techpack', label: 'Techpack', hint: 'Spec · grading · BOM' },
@@ -30,7 +30,7 @@ export const STAGES: Stage[] = [
 // hover-preview caption so both read the same.
 export const CARD_TEXT: Partial<Record<StageKey, string>> = {
   sketch: 'draw · upload · or prompt',
-  visualise: 'plug in a sketch → press render',
+  visualise: 'plug in a sketch → place it on a model',
   studio: 'connect a render, then prompt a scene',
   pattern: 'create a pattern of this product',
   techpack: 'create a techpack of this product',
@@ -72,7 +72,7 @@ export type View = (typeof VIEWS)[number];
 // both paths converge on Ship. A sample can also feed manufacture: approve the
 // one-off, then order bulk from the factory.
 export const NEXT: Partial<Record<StageKey, StageKey[]>> = {
-  sketch: ['visualise', 'studio'],
+  sketch: ['visualise', 'studio', 'pattern'],
   visualise: ['pattern', 'studio'],
   studio: ['studio', 'pattern'],
   extract: ['pattern', 'studio'], // vaulted node; kept so old canvases still route

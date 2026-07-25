@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: 'sign in required' }, { status: 401 });
 
-  const { plan, cadence } = await req.json().catch(() => ({}));
+  const { plan, cadence, trial } = await req.json().catch(() => ({}));
   if ((plan !== 'studio' && plan !== 'pro' && plan !== 'brand') || (cadence !== 'monthly' && cadence !== 'annual')) {
     return NextResponse.json({ error: 'invalid plan' }, { status: 400 });
   }
@@ -36,12 +36,24 @@ export async function POST(req: Request) {
   }
 
   const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || '';
+  // 7-day free trial: Stripe collects the card now and makes the first charge in
+  // 7 days (cancel before then = no charge). Guard against re-trialing.
+  let wantTrial = trial === true;
+  if (wantTrial) {
+    const { data: p } = await admin.from('profiles').select('trial_used').eq('id', user.id).maybeSingle();
+    if (p?.trial_used) wantTrial = false;
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: customerId,
     line_items: [{ price, quantity: 1 }],
     client_reference_id: user.id,
-    subscription_data: { metadata: { supabase_user_id: user.id } },
+    subscription_data: {
+      metadata: { supabase_user_id: user.id },
+      ...(wantTrial ? { trial_period_days: 7 } : {}),
+    },
+    ...(wantTrial ? { payment_method_collection: 'always' as const } : {}),
     allow_promotion_codes: true,
     success_url: `${origin}/profile?checkout=success`,
     cancel_url: `${origin}/pricing?checkout=cancelled`,

@@ -12,19 +12,22 @@ export type Entitlements = {
   generations: number; // AI credits per calendar month
   seats: number; // included seats
   stages: string[]; // node/stage types this tier can use
+  maxPerStage: number; // max nodes of ONE category on a canvas (Infinity = unlimited)
+  regenPerNode: number; // times a single node may (re)generate (Infinity = unlimited)
 };
 
-// Stage keys mirror lib/nodeTypes.ts. Free is the taster — idea → visual only;
-// the rest of the production line (extract, pattern, techpack, sample,
-// manufacture, retailer, ship, brand studio) unlocks on any paid plan.
+// Stage keys mirror lib/nodeTypes.ts. Free is the taster — sketch → model →
+// worldbuild, one node of each and one generation each; the rest of the
+// production line (pattern, techpack, sample, ship, …) unlocks on any paid plan.
 const ALL_STAGES = ['sketch', 'visualise', 'studio', 'extract', 'pattern', 'techpack', 'sample', 'manufacture', 'retailer', 'ship'];
-const FREE_STAGES = ['sketch', 'visualise'];
 
 export const TIERS: Record<Tier, Entitlements> = {
-  free:   { tier: 'free',   label: 'Free',   projects: 3,        generations: 20,    seats: 1,  stages: FREE_STAGES },
-  studio: { tier: 'studio', label: 'Studio', projects: Infinity, generations: 1000,  seats: 1,  stages: ALL_STAGES },
-  pro:    { tier: 'pro',    label: 'Pro',    projects: Infinity, generations: 3000,  seats: 8,  stages: ALL_STAGES },
-  brand:  { tier: 'brand',  label: 'Brand',  projects: Infinity, generations: 10000, seats: 15, stages: ALL_STAGES },
+  // Free users can place ANY node type — the limits are one node per category and
+  // one generation per node, not which nodes they can touch.
+  free:   { tier: 'free',   label: 'Free',   projects: 3,        generations: 20,    seats: 1,  stages: ALL_STAGES, maxPerStage: 1,        regenPerNode: 1 },
+  studio: { tier: 'studio', label: 'Studio', projects: Infinity, generations: 1000,  seats: 1,  stages: ALL_STAGES,  maxPerStage: Infinity, regenPerNode: Infinity },
+  pro:    { tier: 'pro',    label: 'Pro',    projects: Infinity, generations: 3000,  seats: 8,  stages: ALL_STAGES,  maxPerStage: Infinity, regenPerNode: Infinity },
+  brand:  { tier: 'brand',  label: 'Brand',  projects: Infinity, generations: 10000, seats: 15, stages: ALL_STAGES,  maxPerStage: Infinity, regenPerNode: Infinity },
 };
 
 export type Cadence = 'monthly' | 'annual';

@@ -5,12 +5,14 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useStudio } from '@/lib/studio-context';
 import { OpenIcon, UploadIcon } from '@/components/ActionArrow';
 import NodeArt from '@/components/NodeArt';
+import RenderProgress from '@/components/RenderProgress';
 import { seedFrom } from '@/lib/node-art';
 
 // Pattern maker: extract the garment, then trace the pattern — full-bleed clean node.
 export default function PatternNode({ id, data, selected }: NodeProps) {
   const { setNodeImage, openPattern } = useStudio();
   const image = (data as { image?: string }).image;
+  const detecting = (data as { detecting?: boolean }).detecting;
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = (f?: File | null) => {
@@ -22,7 +24,7 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
 
   return (
     <div
-      className={`fbnode pattern-node${selected ? ' selected' : ''}${!image ? ' empty' : ''}`}
+      className={`fbnode pattern-node${selected ? ' selected' : ''}`}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => { e.preventDefault(); load(e.dataTransfer.files?.[0]); }}
     >
@@ -31,6 +33,12 @@ export default function PatternNode({ id, data, selected }: NodeProps) {
       <div className="fb-canvas" onDoubleClick={() => openPattern(id)}>
         {image ? (
           <img src={image} alt="Pattern" draggable={false} />
+        ) : detecting ? (
+          <>
+            <NodeArt seed={seedFrom(id)} animate />
+            <RenderProgress />
+            <div className="fb-blank"><span className="fb-hint">identifying pieces…</span></div>
+          </>
         ) : (
           <>
             <NodeArt seed={seedFrom(id)} />

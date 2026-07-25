@@ -59,6 +59,7 @@ import type { ChosenRetailer, CollectionBrief } from '@/lib/retailers';
 import type { Sample } from '@/lib/sample';
 import { getProject, saveProject, createProject } from '@/lib/client-store';
 import { useMe, notifyGenUsed } from '@/lib/use-billing';
+import { entitlementsFor, type Tier } from '@/lib/entitlements';
 import type { Project } from '@/lib/types';
 
 const nodeTypes = {
@@ -140,6 +141,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [editingSketchView, setEditingSketchView] = useState<View>('front'); // which view the pad opens on
+  const [applyingEdits, setApplyingEdits] = useState(false); // annotate → re-render in progress
   const [editingTechpack, setEditingTechpack] = useState<string | null>(null);
   const [editingExtract, setEditingExtract] = useState<string | null>(null);
   const [editingPattern, setEditingPattern] = useState<string | null>(null);
@@ -161,21 +163,51 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   const adminView = useRef(false); // true when an admin is viewing someone else's canvas (read-only)
   const [isAdminView, setIsAdminView] = useState(false);
   const router = useRouter();
-  const me = useMe();
+  const realMe = useMe();
+  const isOwner = realMe?.email === OWNER_EMAIL;
+  // Owner-only: preview any tier (Free/Studio/Pro/Brand) without switching account.
+  const [tierOverride, setTierOverride] = useState<Tier | null>(null);
+  useEffect(() => { try { const v = localStorage.getItem('lk-tier-override'); if (v && ['free', 'studio', 'pro', 'brand'].includes(v)) setTierOverride(v as Tier); } catch { /* noop */ } }, []);
+  const setPreviewTier = useCallback((t: Tier | null) => {
+    setTierOverride(t);
+    try { if (t) localStorage.setItem('lk-tier-override', t); else localStorage.removeItem('lk-tier-override'); } catch { /* noop */ }
+  }, []);
+  const previewing = isOwner && !!tierOverride;
+  const ownerPower = isOwner && !previewing; // owner privileges apply only when NOT previewing a tier
+  // While previewing, the app behaves exactly as that tier: adopt its entitlements
+  // and drop the owner/admin bypass so all the gates fire.
+  const me = useMemo(() => {
+    if (!realMe || !previewing) return realMe;
+    // preview the tier fresh: adopt its entitlements, drop the owner/admin bypass,
+    // and start from zero usage (don't inherit the owner's real gens against the cap)
+    return { ...realMe, tier: tierOverride!, entitlements: entitlementsFor(tierOverride!), isAdmin: false, email: '__preview__', gensUsed: 0 };
+  }, [realMe, previewing, tierOverride]);
   const meRef = useRef(me);
   meRef.current = me; // always-fresh usage for proactive cap checks inside callbacks
-  const isOwner = me?.email === OWNER_EMAIL;
+  // Free plan: a node may generate only regenPerNode times (1). Pass the node's
+  // generation count so far; returns true — and opens the paywall — when blocked.
+  const regenBlocked = useCallback((genCount: number) => {
+    const m = meRef.current;
+    const lim = m?.entitlements.regenPerNode ?? Infinity;
+    if (lim !== Infinity && !m?.isAdmin && m?.email !== OWNER_EMAIL && genCount >= lim) { openPaywall(); return true; }
+    return false;
+  }, []);
+  const genCountOf = useCallback((id: string) => ((nodesRef.current.find((n) => n.id === id)?.data as { genCount?: number } | undefined)?.genCount ?? 0), []);
   const stageLocked = useCallback(
     (k: StageKey) => (me ? !me.entitlements.stages.includes(k) : false),
     [me],
   );
   // Unreleased stages: unavailable to everyone but the owner (shown as "coming soon").
   const stageComingSoon = useCallback(
-    (k: StageKey) => COMING_SOON_STAGES.has(k) && !isOwner,
-    [isOwner],
+    (k: StageKey) => COMING_SOON_STAGES.has(k) && !ownerPower,
+    [ownerPower],
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  // Library keeps EVERY image ever made here — a new generation is added, it never
+  // overrides the previous one, even after a node's own image is replaced.
+  const libAccum = useRef<{ url: string; kind: string }[]>([]);
+  const libSeen = useRef<Set<string>>(new Set());
   const [menu, setMenu] = useState<MenuState>(null); // right-click context menu
   const clipboard = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null); // in-app node copy buffer
   const [running, setRunning] = useState(false); // Run-chain in flight
@@ -291,28 +323,27 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
   // Visualise: dress the base model in the SELECTED sketch(es) plugged in, using any
   // selected image(s) as style/material reference. Each run appends a card to the
   // node's gallery (kept to the last 20) so you can compare different input combos.
+  // Render mirrors the sketch's views: it renders Front always, and Side/Back only
+  // when a connected input actually carries that view. Each view is stored in byView
+  // and shown by the render node's Front/Back/Side switcher.
   const visualise = useCallback(
-    async (id: string, only?: string) => {
+    async (id: string, onlyView?: View) => {
       const node = nodesRef.current.find((n) => n.id === id);
-      const data0 = node?.data as { order?: string[]; preview?: string; byInput?: Record<string, string> } | undefined;
-      const order = data0?.order ?? [];
-      const byInput: Record<string, string> = { ...(data0?.byInput ?? {}) };
+      const data0 = node?.data as { byView?: Partial<Record<View, string>> } | undefined;
+      const byView: Partial<Record<View, string>> = { ...(data0?.byView ?? {}) };
 
-      // connected inputs (ordered), each with a usable image
+      // connected inputs, each with its per-view images (front falls back to the card image)
       const inputs = edgesRef.current
         .filter((e) => e.target === id)
         .map((e) => nodesRef.current.find((n) => n.id === e.source))
         .filter((n): n is Node => !!n)
-        .sort((a, b) => {
-          const ia = order.indexOf(a.id), ib = order.indexOf(b.id);
-          return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
-        })
         .map((n) => {
-          const nd = n.data as { image?: string; views?: Record<string, string> };
-          const img = nd.image ?? nd.views?.front;
-          return img ? { id: n.id, kind: (n.type as string) || 'sketch', img } : null;
-        })
-        .filter((x): x is { id: string; kind: string; img: string } => !!x);
+          const nd = n.data as { image?: string; views?: Partial<Record<View, string>> };
+          return {
+            kind: (n.type as string) || 'sketch',
+            views: { front: nd.image ?? nd.views?.front, side: nd.views?.side, back: nd.views?.back } as Partial<Record<View, string>>,
+          };
+        });
 
       if (!inputs.length) {
         setNodeData(id, { note: 'plug in a sketch or image, then run' });
@@ -320,53 +351,53 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         return;
       }
 
-      // explicit target (refresh button re-renders exactly the shown thumbnail);
-      // else a selected card → redo just that one; else visualise every input that
-      // doesn't have a render yet (each node gets its own visualisation)
-      const focused = data0?.preview && inputs.some((w) => w.id === data0.preview) ? data0.preview : undefined;
-      const targets = (only && inputs.some((w) => w.id === only))
-        ? inputs.filter((w) => w.id === only)
-        : focused ? inputs.filter((w) => w.id === focused) : inputs.filter((w) => !byInput[w.id]);
-      if (!targets.length) {
-        setNodeData(id, { note: 'all visualised — tap a card to redo' });
+      // Free plan: one model generation per node
+      if (regenBlocked(genCountOf(id))) return;
+
+      const ALL: View[] = ['front', 'side', 'back'];
+      const available = ALL.filter((v) => inputs.some((i) => i.views[v]));
+      // refresh button → just the shown view; else every available view missing a render
+      const targets = (onlyView ? [onlyView] : available.filter((v) => !byView[v])).filter((v) => available.includes(v));
+      const toRender = targets.length ? targets : available;
+      if (!toRender.length) {
+        setNodeData(id, { note: 'nothing to render — draw a front first' });
         setTimeout(() => setNodeData(id, { note: undefined }), 2600);
         return;
       }
 
-      // out of generations → paywall now, before any slow render
-      if (blockedByCap(meRef.current)) { setNodeData(id, { busy: undefined, note: undefined }); return; }
+      if (blockedByCap(meRef.current)) { setNodeData(id, { busyView: undefined, note: undefined }); return; }
 
       const base = await urlToDataUrl('/base.jpg');
-      let last: string | undefined;
-      for (let i = 0; i < targets.length; i++) {
-        const t = targets[i];
-        // mark only THIS input as busy — the rest of the node stays viewable
-        setNodeData(id, { busy: t.id, note: undefined });
+      for (const v of toRender) {
+        const imgs = inputs
+          .filter((i) => i.views[v])
+          .map((i) => ({ url: i.views[v]!, kind: i.kind }));
+        if (!imgs.length) continue;
+        setNodeData(id, { busyView: v, note: undefined });
         try {
           const r = await fetch('/api/visualise', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ base, inputs: [{ url: t.img, kind: t.kind }] }),
+            body: JSON.stringify({ base, inputs: imgs }),
           });
           const j = await r.json();
           if (j.image) {
-            byInput[t.id] = j.image;
-            last = j.image;
-            setNodeData(id, { byInput: { ...byInput }, image: j.image, busy: t.id });
+            byView[v] = j.image;
+            setNodeData(id, { byView: { ...byView }, ...(v === 'front' ? { image: j.image } : {}), busyView: v });
             notifyGenUsed();
           } else if (j.upgrade) {
-            openPaywall(); // hit the cap mid-batch — stop and surface the paywall
-            setNodeData(id, { busy: undefined, note: undefined });
+            openPaywall();
+            setNodeData(id, { busyView: undefined, note: undefined });
             return;
-          } else if (targets.length === 1) {
-            setNodeData(id, { busy: undefined, note: j.error || 'render failed' });
+          } else if (toRender.length === 1) {
+            setNodeData(id, { busyView: undefined, note: j.error || 'render failed' });
             return;
           }
         } catch {
-          if (targets.length === 1) { setNodeData(id, { busy: undefined, note: 'render failed' }); return; }
+          if (toRender.length === 1) { setNodeData(id, { busyView: undefined, note: 'render failed' }); return; }
         }
       }
-      setNodeData(id, { byInput, image: last ?? byInput[inputs[0].id], busy: undefined, note: undefined });
+      setNodeData(id, { byView, image: byView.front ?? byView[toRender[0]], busyView: undefined, note: undefined, genCount: genCountOf(id) + 1 });
     },
     [setNodeData]
   );
@@ -378,9 +409,46 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     return !!s && !!t && !!NEXT[s]?.includes(t);
   }, []);
 
+  // Auto piece-identification: as soon as a design is plugged into a Pattern node,
+  // trace the outline → deconstruct into panels → number them, with no click needed.
+  const autoDetectPattern = useCallback(async (patternId: string, sourceImg: string) => {
+    if (blockedByCap(meRef.current)) return;
+    setNodeData(patternId, { detecting: true, note: 'identifying pieces…' });
+    const call = async (image: string, mode: string) => {
+      const r = await fetch('/api/pattern', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ image, mode }),
+      });
+      const j = await r.json();
+      if (j.upgrade) { openPaywall(); return undefined; }
+      return j.image as string | undefined;
+    };
+    try {
+      const outline = await call(sourceImg, 'outline');
+      if (!outline) { setNodeData(patternId, { detecting: false, note: undefined }); return; }
+      notifyGenUsed();
+      const panels = await call(outline, 'deconstruct');
+      if (!panels) { setNodeData(patternId, { detecting: false, note: undefined, image: outline }); return; }
+      notifyGenUsed();
+      const numbered = await call(panels, 'number');
+      if (numbered) notifyGenUsed();
+      setNodeData(patternId, { detecting: false, note: undefined, image: numbered ?? panels });
+    } catch { setNodeData(patternId, { detecting: false, note: undefined }); }
+  }, [setNodeData, regenBlocked, genCountOf]);
+
   const onConnect = useCallback(
-    (c: Connection) => setEdges((es) => addEdge({ ...c, type: 'wire' }, es)),
-    [setEdges]
+    (c: Connection) => {
+      setEdges((es) => addEdge({ ...c, type: 'wire' }, es));
+      const target = nodesRef.current.find((n) => n.id === c.target);
+      if (target?.type === 'pattern') {
+        const src = nodesRef.current.find((n) => n.id === c.source);
+        const sd = src?.data as { image?: string; views?: Partial<Record<View, string>> } | undefined;
+        const img = sd?.image ?? sd?.views?.front;
+        const td = target.data as { image?: string; detecting?: boolean };
+        if (img && !td.image && !td.detecting) void autoDetectPattern(c.target!, img);
+      }
+    },
+    [setEdges, autoDetectPattern]
   );
 
   // Production-line panels are paid — free users get bounced to pricing.
@@ -414,10 +482,38 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     [setNodes]
   );
 
+  // Annotate → re-render: send the flattened view (render + drawn panels + labels)
+  // to the edit model and drop the result back onto that view.
+  const applyEdits = useCallback(
+    async (view: View, dataUrl: string) => {
+      if (!editing) return;
+      if (blockedByCap(meRef.current)) return;
+      setApplyingEdits(true);
+      try {
+        const r = await fetch('/api/annotate', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ image: dataUrl }),
+        });
+        const j = await r.json();
+        if (j.image) { setNodeView(editing, view, j.image); notifyGenUsed(); }
+        else if (j.upgrade) openPaywall();
+      } catch { /* network — leave the drawing in place to retry */ }
+      finally { setApplyingEdits(false); }
+    },
+    [editing, setNodeView]
+  );
+
   const addNode = useCallback(
     (type: StageKey) => {
       if (stageComingSoon(type)) return; // unreleased — dock shows "coming soon"
       if (stageLocked(type)) { openUnlock(type); return; } // gate premium stages → trial/upgrade prompt
+      // Free plan: only ONE node per category on the canvas.
+      const perStage = meRef.current?.entitlements.maxPerStage ?? Infinity;
+      if (perStage !== Infinity && !meRef.current?.isAdmin && meRef.current?.email !== OWNER_EMAIL
+        && nodesRef.current.filter((n) => (n.data as { type?: string })?.type === type).length >= perStage) {
+        openPaywall(); return;
+      }
       const id = `${type}-${Date.now().toString(36)}-${counter++}`;
       const nt = CUSTOM[type] ?? 'stage';
 
@@ -546,6 +642,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     const node = nodesRef.current.find((n) => n.id === id);
     const isSketch = node?.type === 'sketch';
     const mode = isSketch ? 'product' : 'freeform';
+    // Free plan: one generation per node (drawing/uploading doesn't count)
+    if (regenBlocked(genCountOf(id))) { setNodeData(id, { loading: false, note: undefined, prompt }); return; }
 
     const inputs: string[] = [];
     for (const e of edgesRef.current) {
@@ -554,6 +652,12 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       const sd = src?.data as { image?: string; views?: Record<string, string> } | undefined;
       const img = sd?.image ?? sd?.views?.front;
       if (img) inputs.push(img);
+    }
+    // Worldbuild (freeform): if nothing plugged in carries an image, fall back to the
+    // node's own uploaded/base image so it still has something to transform.
+    if (!inputs.length && !isSketch) {
+      const own = (node?.data as { image?: string } | undefined)?.image;
+      if (own) inputs.push(own);
     }
     // out of generations → paywall now, before the slow render
     if (blockedByCap(meRef.current)) { setNodeData(id, { loading: false, note: undefined, prompt }); return; }
@@ -573,7 +677,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
         setNodeData(id, { loading: false, note: front.upgrade ? undefined : (front.error || 'no image returned'), prompt });
         return;
       }
-      const patch: Record<string, unknown> = { image: front.image, loading: false, note: undefined, prompt };
+      const patch: Record<string, unknown> = { image: front.image, loading: false, note: undefined, prompt, genCount: genCountOf(id) + 1 };
       if (isSketch) patch.views = { ...curViews(), front: front.image };
       setNodeData(id, patch);
       notifyGenUsed();
@@ -595,7 +699,7 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     } catch (err) {
       setNodeData(id, { loading: false, viewsBusy: false, note: (err as Error).message || 'generation failed' });
     }
-  }, [setNodeData]);
+  }, [setNodeData, regenBlocked, genCountOf]);
 
   // Run the pipeline: walk nodes in dependency (topological) order and fire each
   // automatable action — Visualise renders its sketch, Image/Brand-studio nodes
@@ -979,8 +1083,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       sketch: 'Sketch', visualise: 'Visualisation', extract: 'Extract',
       pattern: 'Pattern', techpack: 'Techpack', sample: 'Sample', manufacture: 'Manufacture', retailer: 'Retailer',
     };
-    const seen = new Set<string>();
-    const out: LibItem[] = [];
+    // Accumulate any newly-seen image into the persistent library list. We never
+    // drop URLs, so re-generating a node adds a new entry instead of replacing it.
     for (const n of nodes) {
       const d = n.data as { image?: string; views?: Record<string, string>; type?: string } | undefined;
       const kind = KIND[d?.type ?? ''] ?? 'Media';
@@ -988,12 +1092,12 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
       if (d?.views) for (const u of Object.values(d.views)) if (typeof u === 'string') urls.push(u);
       if (typeof d?.image === 'string') urls.push(d.image);
       for (const u of urls) {
-        if (u && (u.startsWith('data:') || /^https?:/.test(u)) && !seen.has(u)) {
-          seen.add(u); out.push({ id: `${n.id}-${out.length}`, url: u, kind });
+        if (u && (u.startsWith('data:') || /^https?:/.test(u)) && !libSeen.current.has(u)) {
+          libSeen.current.add(u); libAccum.current.push({ url: u, kind });
         }
       }
     }
-    return out.reverse(); // most recent first
+    return libAccum.current.map((it, i) => ({ id: `lib-${i}`, url: it.url, kind: it.kind })).reverse(); // most recent first
   }, [nodes]);
 
   const editingViews = useMemo<Partial<Record<View, string>>>(() => {
@@ -1111,6 +1215,15 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
     <StudioContext.Provider value={{ openSketch, visualise, openTechpack, openExtract, openPattern, openManufacture, openRetailer, openSample, setNodeImage, promptImage, renameGroup, setNoteText }}>
       <div className={`studio${booting || project === undefined ? ' emerging' : ''}`}>
         <DotField viewportRef={viewportRef} />
+        {isOwner && (
+          <div className="tier-preview" role="group" aria-label="Preview tier">
+            <span className="tp-lbl">Preview as</span>
+            <button className={!tierOverride ? 'on' : ''} onClick={() => setPreviewTier(null)} title="Your real account">Off</button>
+            {(['free', 'studio', 'pro', 'brand'] as const).map((t) => (
+              <button key={t} className={tierOverride === t ? 'on' : ''} onClick={() => setPreviewTier(t)}>{t}</button>
+            ))}
+          </div>
+        )}
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -1215,6 +1328,8 @@ export default function StudioCanvas({ projectId }: { projectId: string }) {
           views={editingViews}
           onView={(view, d) => { if (editing) setNodeView(editing, view, d); }}
           onViewChange={(v) => { if (editing) setNodeData(editing, { view: v }); }}
+          onApplyEdits={applyEdits}
+          applying={applyingEdits}
           onClose={() => setEditing(null)}
         />
 
