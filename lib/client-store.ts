@@ -51,8 +51,17 @@ export async function getProject(id: string): Promise<Project | null> {
   return lread().find((p) => p.id === id) ?? null;
 }
 
+// A new canvas is born with a single Sketch node — the one starting point, no
+// quick-start menu to decode.
+function starterFlow(): Flow {
+  return {
+    nodes: [{ id: `sketch-${Date.now().toString(36)}`, type: 'sketch', position: { x: 200, y: 160 }, data: { type: 'sketch' } }],
+    edges: [],
+  } as Flow;
+}
+
 export async function createProject(name?: string, flow?: Flow): Promise<Project> {
-  const f: Flow = flow ?? { nodes: [], edges: [] };
+  const f: Flow = flow ?? starterFlow();
   if (HAS_DB) {
     const sb = supabaseBrowser();
     const { data: { user } } = await sb.auth.getUser();

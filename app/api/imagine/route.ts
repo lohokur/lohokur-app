@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateImage } from '@/lib/imagegen';
+import { usesProModel } from '@/lib/entitlements';
 import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 
 // Image generation can take a while (~30–90s).
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
     }
 
     const full = guide + '"' + String(prompt).trim() + '".' + (product ? ' ' + productStyle(String(view || 'front')) : '');
-    const image = await generateImage(full, refs);
+    const image = await generateImage(full, refs, usesProModel(gate.tier));
     return NextResponse.json({ image });
   } catch (e) {
     await refundGeneration(); // generation failed — refund the credit

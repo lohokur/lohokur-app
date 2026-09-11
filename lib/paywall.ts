@@ -10,6 +10,7 @@ export function openPaywall() {
 // Reads the client's cached usage; the server 402 is still the backstop.
 export function blockedByCap(me: Me | null): boolean {
   if (!me) return false;
+  if (me.unlimited) return false; // owner accounts are never capped (admins still are)
   const cap = me.entitlements.generations;
   if (cap === Infinity) return false;
   if (me.gensUsed >= cap) {

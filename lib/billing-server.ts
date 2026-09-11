@@ -2,7 +2,7 @@ import 'server-only';
 import { supabaseServer } from './supabase/server';
 import { generationCap, entitlementsFor, type Entitlements } from './entitlements';
 import { readTrial, effectiveTier } from './trial';
-import { isAdmin } from './admin';
+import { isAdmin, isUnlimited, tierOverrideFor } from './admin';
 
 // Metering is skipped entirely when there's no Supabase backend (local dev fallback).
 const HAS_DB = process.env.NEXT_PUBLIC_HAS_DB === '1';
@@ -21,8 +21,13 @@ export async function consumeGeneration(cost = 1): Promise<MeterResult> {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false, reason: 'unauth' };
 
+  // Owner accounts are never metered — unlimited, no counter burned. (Being an
+  // admin/analytics user does NOT grant this — only UNLIMITED_EMAILS.)
+  if (isUnlimited(user.email)) return { ok: true, remaining: Infinity, tier: 'brand' };
+
   const { data: profile } = await sb.from('profiles').select('tier').eq('id', user.id).maybeSingle();
-  const baseTier = profile?.tier ?? 'free';
+  // a per-email tier override wins over the stored plan (forces a specific cap)
+  const baseTier = tierOverrideFor(user.email) ?? profile?.tier ?? 'free';
   // an active trial grants Studio-level caps/model
   const { onTrial } = readTrial(user.user_metadata as Record<string, unknown>);
   const tier = effectiveTier(baseTier, onTrial);
@@ -55,6 +60,7 @@ export type ProfileView = {
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
   isAdmin: boolean;
+  unlimited: boolean;               // never metered (owner) — distinct from isAdmin
   onTrial: boolean;
   trialEndsAt: string | null;
   trialUsed: boolean;
@@ -71,7 +77,8 @@ export async function getProfileView(): Promise<ProfileView | null> {
     .select('tier, gens_used, subscription_status, current_period_end, stripe_customer_id')
     .eq('id', user.id)
     .maybeSingle();
-  const tier = data?.tier ?? 'free';
+  // per-email tier override wins over the stored plan
+  const tier = tierOverrideFor(user.email) ?? data?.tier ?? 'free';
   const { onTrial, trialEndsAt, trialUsed } = readTrial(user.user_metadata as Record<string, unknown>);
   const effTier = effectiveTier(tier, onTrial) as Entitlements['tier'];
   return {
@@ -83,6 +90,7 @@ export async function getProfileView(): Promise<ProfileView | null> {
     currentPeriodEnd: data?.current_period_end ?? null,
     stripeCustomerId: data?.stripe_customer_id ?? null,
     isAdmin: isAdmin(user.email),
+    unlimited: isUnlimited(user.email),
     onTrial,
     trialEndsAt,
     trialUsed,

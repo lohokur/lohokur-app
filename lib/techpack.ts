@@ -7,6 +7,8 @@ export type Material = { id: string; ref: string; name: string; placement: strin
 export type BomRow = { id: string; item: string; desc: string; placement: string; qty: string; unit: string };
 export type TrimRow = { id: string; section: string; type: string; desc: string };
 export type Colorway = { id: string; placement: string; pantone: string; hex: string };
+// A woven/printed label designed in the sketch pad, propagated down the pipeline.
+export type Label = { brand: string; care: string; image?: string; draft?: string };
 
 export type Techpack = {
   brand: string;
@@ -21,7 +23,9 @@ export type Techpack = {
   sizes: string[];
   sampleSize: string;
   unit: string;
-  flats: { front?: string; side?: string; back?: string };
+  mockups: { front?: string; side?: string; back?: string }; // live renders (front/side/back)
+  flats: { front?: string; side?: string; back?: string };    // technical vectors of each view
+  label?: Label;                                              // designed care/brand label
   poms: Pom[];
   materials: Material[];
   boms: BomRow[];
@@ -55,6 +59,7 @@ export function defaultTechpack(): Techpack {
     sizes,
     sampleSize: 'M',
     unit: 'cm',
+    mockups: {},
     flats: {},
     poms: [
       pom('Chest Width (2.5 cm below armhole, laid flat)', '±1.0'),
@@ -111,7 +116,9 @@ export function normalizeTechpack(v: Partial<Techpack> | undefined): Techpack {
     ...d,
     ...v,
     sizes,
+    mockups: { ...v.mockups },
     flats: { ...v.flats },
+    label: v.label,
     info: { ...d.info, ...v.info },
     poms: (v.poms ?? d.poms).map((p) => ({ ...p, v: { ...emptyVals(sizes), ...p.v } })),
     materials: v.materials ?? d.materials,
@@ -154,6 +161,16 @@ function measurementsPage(tp: Techpack) {
     <div class="pk-flats">
       ${flatImg(tp.flats.front, 'Front')}${flatImg(tp.flats.side, 'Side')}${flatImg(tp.flats.back, 'Back')}
     </div>
+  </section>`;
+}
+
+const mockImg = (src: string | undefined, label: string) =>
+  src ? `<figure class="pk-mock"><img src="${src}" alt="${esc(label)}"/><figcaption>${esc(label)}</figcaption></figure>` : '';
+
+function mockupsPage(tp: Techpack) {
+  const m = tp.mockups ?? {};
+  return `<section class="pk-body">
+    <div class="pk-mocks">${mockImg(m.front, 'Front')}${mockImg(m.side, 'Side')}${mockImg(m.back, 'Back')}</div>
   </section>`;
 }
 
@@ -236,7 +253,9 @@ function referencesPage(tp: Techpack) {
 
 export function techpackHtml(tp0: Techpack): string {
   const tp = normalizeTechpack(tp0);
+  const hasMockups = !!(tp.mockups?.front || tp.mockups?.side || tp.mockups?.back);
   const pages: { title: string; html: string }[] = [
+    ...(hasMockups ? [{ title: 'LIVE MOCKUPS', html: mockupsPage(tp) }] : []),
     { title: 'SAMPLE MEASUREMENTS', html: measurementsPage(tp) },
     { title: 'SIZE GRADING CHART', html: gradingPage(tp) },
     { title: 'MATERIALS', html: materialsPage(tp) },
@@ -274,6 +293,10 @@ export function techpackHtml(tp0: Techpack): string {
   .pk-flat figcaption{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-top:8px}
   .pk-flat-empty{height:440px;border:1px dashed #ccc;border-radius:8px;display:flex;align-items:center;justify-content:center}
   .pk-flat-empty span{color:#bbb;font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+  .pk-mocks{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start}
+  .pk-mock{margin:0;text-align:center}
+  .pk-mock img{width:100%;max-height:580px;object-fit:contain;border-radius:8px;background:#f4f3ef}
+  .pk-mock figcaption{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-top:8px}
 
   table{width:100%;border-collapse:collapse}
   .pk-grade th,.pk-tbl th{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#999;font-weight:600;text-align:center;padding:7px 8px;border-bottom:1px solid #111}

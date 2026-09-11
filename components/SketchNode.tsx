@@ -7,12 +7,13 @@ import { OpenIcon, ActionArrow, UploadIcon } from '@/components/ActionArrow';
 import NodeArt from '@/components/NodeArt';
 import { seedFrom } from '@/lib/node-art';
 import { VIEWS, type View } from '@/lib/nodeTypes';
+import LockedView from '@/components/LockedView';
 
 // The whole node IS the sketch canvas. On hover: the prompt bar floats over the
 // bottom, the draw/upload tools appear top-right, and the front/side/back views
 // pop up top-centre. (Absorbs the old Image node — draw · upload · prompt.)
 export default function SketchNode({ id, data, selected }: NodeProps) {
-  const { openSketch, promptImage, setNodeImage } = useStudio();
+  const { openSketch, promptImage, setNodeImage, sideLocked } = useStudio();
   const rf = useReactFlow();
   const d = data as { image?: string; views?: Partial<Record<View, string>>; loading?: boolean; note?: string; prompt?: string; coachGenerate?: boolean; viewsBusy?: boolean; view?: View };
   const views = d.views ?? {};
@@ -25,6 +26,7 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
   const view: View = d.view ?? 'front';
   const setView = (v: View) => rf.updateNodeData(id, { view: v });
   const shown = viewImg(view); // the node card shows exactly the selected view (F/S/B)
+  const locked = view !== 'front' && sideLocked && !shown && !!front; // paid side/back
   const [text, setText] = useState(d.prompt ?? '');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -47,8 +49,8 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
     >
       <Handle type="target" position={Position.Left} className="sn-handle" />
 
-      {/* the canvas fills the whole node — shows the selected view */}
-      <div className="sk-canvas" onDoubleClick={() => openSketch(id, view)}>
+      {/* the canvas fills the whole node — shows the selected view. single click opens the pad */}
+      <div className="sk-canvas" onClick={() => openSketch(id, view)}>
         {d.loading ? (
           <>
             <NodeArt seed={seedFrom(id)} animate />
@@ -56,12 +58,16 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
           </>
         ) : shown ? (
           <img src={shown} alt={`Sketch ${view}`} draggable={false} />
+        ) : locked ? (
+          <LockedView src={front} label={`${view} view`} />
         ) : (
           <>
             <NodeArt seed={seedFrom(id)} />
             <div className="fb-blank">
               <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l3.6-.9L18.1 8.6a1.8 1.8 0 0 0 0-2.6l-1.1-1.1a1.8 1.8 0 0 0-2.6 0L3.9 15.4 3 19z" /></svg>
-              <span className="fb-hint">{view === 'front' ? 'draw · upload · or prompt' : `draw the ${view} view`}</span>
+              {view === 'front'
+                ? <strong className="node-empty-title">Draw, upload, or prompt a design.</strong>
+                : <span className="fb-hint">{`draw the ${view} view`}</span>}
             </div>
           </>
         )}
@@ -74,7 +80,7 @@ export default function SketchNode({ id, data, selected }: NodeProps) {
           <button
             key={v}
             className={`sk-view${viewImg(v) ? ' has' : ''}${view === v ? ' on' : ''}${d.viewsBusy && !viewImg(v) && v !== 'front' ? ' busy' : ''}`}
-            onClick={(e) => { e.stopPropagation(); setView(v); if (!viewImg(v)) openSketch(id, v); }}
+            onClick={(e) => { e.stopPropagation(); setView(v); if (!viewImg(v) && !(sideLocked && v !== 'front')) openSketch(id, v); }}
             title={viewImg(v) ? `${v[0].toUpperCase()}${v.slice(1)} view` : (d.viewsBusy && v !== 'front' ? `Generating ${v} view…` : `Draw the ${v} view`)}
           >
             {v[0].toUpperCase() + v.slice(1)}

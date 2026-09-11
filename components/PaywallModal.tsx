@@ -3,18 +3,30 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useMe, startCheckout } from '@/lib/use-billing';
-import { priceFor, TIERS } from '@/lib/entitlements';
-import { TRIAL_DAYS } from '@/lib/trial';
+import { priceFor, entitlementsFor, TIERS, CURRENCY } from '@/lib/entitlements';
+import { announcePopout, onPopout } from '@/lib/popout';
 
 // Tier-aware "you're out of generations" moment. Any generation path can open it
-// via openPaywall() (lib/paywall). Upsells to the next tier with one tap; price
-// comes from the single pricing source in lib/entitlements.
+// via openPaywall() (lib/paywall). It always upsells to the next tier with one
+// tap — no free trial. Rendered as a techpack-style slide-in drawer; only one
+// popout shows at a time (see lib/popout).
 const NEXT_TIER: Record<string, 'studio' | 'pro' | 'brand' | null> = {
   free: 'studio',
   studio: 'pro',
   pro: 'brand',
   brand: null, // top self-serve tier
 };
+
+// Three concrete things you unlock by moving up one tier — real entitlement
+// numbers, not marketing fluff.
+function unlocks(from: string, to: 'studio' | 'pro' | 'brand'): string[] {
+  const next = entitlementsFor(to);
+  const gens = `${next.generations.toLocaleString()} generations a month`;
+  if (from === 'free') {
+    return [gens, 'Unlimited projects, nodes & regenerations', 'The full production line, end to end'];
+  }
+  return [gens, `${next.seats} seats for your team`, 'Priority generation & support'];
+}
 
 export default function PaywallModal() {
   const me = useMe();
@@ -23,10 +35,13 @@ export default function PaywallModal() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    const show = () => { setErr(null); setBusy(false); setOpen(true); };
+    const show = () => { setErr(null); setBusy(false); setOpen(true); announcePopout('paywall'); };
     window.addEventListener('lk-paywall', show);
     return () => window.removeEventListener('lk-paywall', show);
   }, []);
+
+  // close if another popout opens (one at a time)
+  useEffect(() => onPopout('paywall', () => setOpen(false)), []);
 
   useEffect(() => {
     if (!open) return;
@@ -41,61 +56,74 @@ export default function PaywallModal() {
   // the tier being previewed, not the owner's real plan
   const previewTier = typeof window !== 'undefined' ? localStorage.getItem('lk-tier-override') : null;
   const tier = previewTier || me?.tier || 'free';
+  const usedCap = entitlementsFor(tier).generations;
   const nextTier = NEXT_TIER[tier] ?? null;
   const upsell = nextTier
-    ? { plan: nextTier, label: TIERS[nextTier].label, price: priceFor(nextTier, 'monthly') }
+    ? { plan: nextTier, label: TIERS[nextTier].label, price: priceFor(nextTier, 'monthly'), perks: unlocks(tier, nextTier) }
     : null;
-  // a free user who's never trialed gets the trial instead of a hard upsell
-  const offerTrial = tier === 'free' && (previewTier === 'free' || me?.trialUsed === false);
-
-  // Card-on-file 7-day trial: send them to Stripe Checkout with a 7-day trial —
-  // the card is collected now, the first charge lands in 7 days.
-  const beginTrial = async () => {
-    setBusy(true); setErr(null);
-    const error = await startCheckout('studio', 'monthly', { trial: true });
-    if (error) { setErr(error); setBusy(false); } // otherwise startCheckout redirects to Stripe
-  };
 
   const upgrade = async () => {
     if (!upsell) return;
     setBusy(true); setErr(null);
     const error = await startCheckout(upsell.plan, 'monthly');
-    if (error) { setErr(error); setBusy(false); } // otherwise startCheckout redirects
+    if (error) { setErr(error); setBusy(false); } // otherwise startCheckout redirects to Stripe
   };
 
   return (
-    <div className="pw-scrim" onClick={() => setOpen(false)}>
-      <div className="pw-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="pw-title">{offerTrial ? 'Start your free trial' : 'You’re out of ink'}</h2>
-        <p className="pw-body">
-          {offerTrial
-            ? `Try Studio free for ${TRIAL_DAYS} days — 1,000 generations a month, unlimited nodes and the full production line. Add your card now; your first payment is ${TRIAL_DAYS} days from today and you can cancel anytime before then.`
-            : 'Your ink refills on the 1st.'}
-          {!offerTrial && upsell
-            ? ` Or upgrade to ${upsell.label} for more each month and keep creating now.`
-            : ''}
-        </p>
+    <>
+      <div className="popout-catch" onClick={() => setOpen(false)} />
+      <aside className="popout open" role="dialog" aria-modal="true" aria-labelledby="pw-title">
+        <div className="tp-head">
+          <span>Upgrade</span>
+          <button className="sp-x" onClick={() => setOpen(false)} aria-label="Close">×</button>
+        </div>
 
-        {err && <p className="pw-err">{err}</p>}
+        <div className="po-body">
+          <span className="po-kicker">Out of generations</span>
+          <h2 className="po-title" id="pw-title">
+            {upsell ? `Upgrade to ${upsell.label}` : 'You’re on the top plan'}
+          </h2>
+          <p className="po-lead">
+            {upsell
+              ? `You’ve used all ${usedCap.toLocaleString()} generations on ${TIERS[tier as keyof typeof TIERS]?.label ?? 'your plan'} this month. Move up to ${upsell.label} and keep creating right now — your ink refills the moment you upgrade.`
+              : 'Your generations refill on the 1st. Reach out if you need more this month.'}
+          </p>
 
-        <div className="pw-actions">
-          {offerTrial ? (
-            <button className="pw-primary" onClick={beginTrial} disabled={busy}>
-              {busy ? 'Starting…' : `Start your ${TRIAL_DAYS}-day free trial`}
-            </button>
-          ) : upsell ? (
-            <button className="pw-primary" onClick={upgrade} disabled={busy}>
-              {busy ? 'Redirecting…' : `Upgrade to ${upsell.label} — £${upsell.price}/mo`}
+          {upsell && (
+            <div className="po-tier">
+              <div className="po-tier-head">
+                <span className="po-tier-name">{upsell.label}</span>
+                <span className="po-tier-price">
+                  {upsell.price != null ? <><strong>{CURRENCY}{upsell.price}</strong><span>/mo</span></> : null}
+                </span>
+              </div>
+              <ul className="po-perks">
+                {upsell.perks.map((p) => <li key={p}>{p}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {err && <p className="po-err">{err}</p>}
+
+          {upsell && (
+            <p className="pw-guarantee">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3.5z" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M8.5 12l2.4 2.4 4.6-4.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              7-day money-back guarantee — full refund if it&apos;s not for you.
+            </p>
+          )}
+        </div>
+
+        <div className="tp-foot tp-foot-row">
+          <Link className="tp-export" href="/pricing" onClick={() => setOpen(false)}>Compare plans</Link>
+          {upsell ? (
+            <button className="sp-done" onClick={upgrade} disabled={busy}>
+              {busy ? 'Redirecting…' : `Upgrade to ${upsell.label}`}
             </button>
           ) : (
-            <button className="pw-primary" onClick={() => setOpen(false)}>Got it</button>
+            <button className="sp-done" onClick={() => setOpen(false)}>Got it</button>
           )}
-          <div className="pw-secondary">
-            <Link href="/pricing" onClick={() => setOpen(false)}>See all plans →</Link>
-            <button className="pw-dismiss" onClick={() => setOpen(false)}>Not now</button>
-          </div>
         </div>
-      </div>
-    </div>
+      </aside>
+    </>
   );
 }

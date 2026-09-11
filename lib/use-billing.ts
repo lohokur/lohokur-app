@@ -14,6 +14,7 @@ export type Me = {
   currentPeriodEnd: string | null;
   hasSubscription: boolean;
   isAdmin: boolean;
+  unlimited: boolean; // never metered (owner) — distinct from isAdmin
   entitlements: Entitlements;
   onTrial: boolean;
   trialEndsAt: string | null;
@@ -36,6 +37,7 @@ function hydrate(d: Record<string, unknown>): Me {
     currentPeriodEnd: (d.currentPeriodEnd as string) ?? null,
     hasSubscription: d.hasSubscription === true,
     isAdmin: d.isAdmin === true,
+    unlimited: d.unlimited === true,
     entitlements: entitlementsFor(eff),
     onTrial,
     trialEndsAt,
@@ -50,7 +52,7 @@ export function useMe(): Me | null {
   const [me, setMe] = useState<Me | null>(null);
   useEffect(() => {
     if (!HAS_DB) {
-      setMe(hydrate({ tier: 'studio', isAdmin: true }));
+      setMe(hydrate({ tier: 'studio', isAdmin: true, unlimited: true }));
       return;
     }
     let live = true;

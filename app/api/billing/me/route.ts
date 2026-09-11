@@ -10,7 +10,7 @@ const NO_STORE = { 'Cache-Control': 'private, no-store, max-age=0' } as const;
 // Lightweight "who am I / what's my plan" for client UI (dock locks, profile, pricing).
 export async function GET() {
   const v = await getProfileView();
-  if (!v) return NextResponse.json({ email: null, tier: 'free', gensUsed: 0, subscriptionStatus: null, currentPeriodEnd: null, hasSubscription: false, isAdmin: false, onTrial: false, trialEndsAt: null, trialUsed: false }, { headers: NO_STORE });
+  if (!v) return NextResponse.json({ email: null, tier: 'free', gensUsed: 0, subscriptionStatus: null, currentPeriodEnd: null, hasSubscription: false, isAdmin: false, unlimited: false, onTrial: false, trialEndsAt: null, trialUsed: false }, { headers: NO_STORE });
   return NextResponse.json({
     email: v.email,
     tier: v.tier,
@@ -19,6 +19,7 @@ export async function GET() {
     currentPeriodEnd: v.currentPeriodEnd,
     hasSubscription: !!v.stripeCustomerId,
     isAdmin: v.isAdmin,
+    unlimited: v.unlimited,
     onTrial: v.onTrial,
     trialEndsAt: v.trialEndsAt,
     trialUsed: v.trialUsed,

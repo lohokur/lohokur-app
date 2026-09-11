@@ -1,8 +1,10 @@
 // Recommended manufacturers + garment-specific sampling / bulk quoting.
-// No real supplier API yet — a curated vetted list, with costs scaled to the
-// connected garment's complexity (materials, trims, embellishment).
+// Our real white-label suppliers only — costs scaled to the connected garment's
+// complexity (materials, trims, embellishment). Contact (email/WhatsApp) is set
+// per order in the liaison step, so it's intentionally left off the directory.
 
 import type { Techpack } from '@/lib/techpack';
+import { samplePrice, bulkUnitPrice } from '@/lib/pricing';
 
 export type Manufacturer = {
   id: string;
@@ -16,6 +18,12 @@ export type Manufacturer = {
   leadDays: number;
   rating: number;
   note: string;
+  email?: string;    // liaison-agent contact (optional — user can set per order)
+  whatsapp?: string; // E.164, e.g. +8613800138000
+  photos?: string[]; // real factory-floor photos (representative), shown on the card
+  vetted?: boolean;  // reviewed + worked with directly by LOHO KUR
+  about?: string;    // context shown in the "more info" dropdown
+  ethics?: string;   // ethics / working-conditions / vetting note
 };
 
 export const MANUFACTURERS: Manufacturer[] = [
@@ -24,38 +32,28 @@ export const MANUFACTURERS: Manufacturer[] = [
     specialties: ['Cut & sew', 'Fleece', 'Embellishment', 'Appliqué'], moq: 300,
     sampleBase: 120, unitBase: 14, leadDays: 35, rating: 4.7,
     note: 'Full-package factory, strong on complex embellished streetwear.',
+    photos: ['/manufacturers/xuchang.jpg', '/manufacturers/factory-3.jpg'],
+    vetted: true,
+    about: 'A full-package cut-and-sew factory in Dongguan that handles sampling through to bulk under one roof — strong on fleece bodies, appliqué and embellishment. We ran a full production order here, so we know the quality, communication and turnaround first-hand.',
+    ethics: 'We only list makers we have worked with directly. Fair pay and safe working conditions are written into our supplier agreement, and turnaround is confirmed against a real order.',
   },
   {
-    id: 'atelier-lin', name: 'Guangzhou Atelier Lin', location: 'Guangzhou, CN', region: 'China',
-    specialties: ['Knitwear', 'Appliqué', 'Lace', 'Small batch'], moq: 150,
-    sampleBase: 95, unitBase: 17, leadDays: 30, rating: 4.6,
-    note: 'Lower MOQ, detail-led. Good for lace and hand-set trims.',
-  },
-  {
-    id: 'porto-craft', name: 'Porto Craft Studio', location: 'Porto, PT', region: 'Europe',
-    specialties: ['Cut & sew', 'Premium', 'Small runs', 'EU'], moq: 100,
-    sampleBase: 180, unitBase: 32, leadDays: 28, rating: 4.8,
-    note: 'EU-made, premium finish. Higher unit cost, lowest MOQ, tariff-free in EU.',
-  },
-  {
-    id: 'istanbul-form', name: 'İstanbul Form Textile', location: 'Istanbul, TR', region: 'Turkey',
-    specialties: ['Jersey', 'Fleece', 'Cut & sew', 'Mid runs'], moq: 250,
-    sampleBase: 110, unitBase: 19, leadDays: 25, rating: 4.4,
-    note: 'Fast turnaround to EU/UK, solid on fleece bodies.',
-  },
-  {
-    id: 'tiruppur', name: 'Tiruppur Knit House', location: 'Tiruppur, IN', region: 'India',
-    specialties: ['Cotton knits', 'Jersey', 'High volume'], moq: 500,
-    sampleBase: 70, unitBase: 9, leadDays: 40, rating: 4.3,
-    note: 'Best bulk pricing at volume. Simpler embellishment capability.',
-  },
-  {
-    id: 'la-sample', name: 'LA Sample Room', location: 'Los Angeles, US', region: 'USA',
-    specialties: ['Sampling', 'Small batch', 'Fast', 'Cut & sew'], moq: 50,
-    sampleBase: 220, unitBase: 46, leadDays: 18, rating: 4.5,
-    note: 'Domestic sampling & tiny runs. Expensive per unit, fastest sample.',
+    id: 'xufei', name: 'Xufei Tech', location: 'Mainland China', region: 'China',
+    specialties: ['Cut & sew', 'OEM/ODM', 'Full-package', 'Embellishment'], moq: 200,
+    sampleBase: 100, unitBase: 13, leadDays: 32, rating: 4.5,
+    note: 'Alibaba verified supplier (xufeitech.en.alibaba.com). Confirm capabilities, MOQ & quote before ordering.',
+    photos: ['/manufacturers/xufei.jpg', '/manufacturers/factory-4.jpg'],
+    vetted: true,
+    about: 'An Alibaba-verified OEM/ODM cut-and-sew supplier offering full-package production with lower minimums — a good fit for embellished pieces and smaller runs.',
+    ethics: 'Alibaba Verified Supplier status, plus our own checks: we confirm capabilities, MOQ and an approved sample before any bulk order goes ahead.',
   },
 ];
+
+// First factory photo for a manufacturer id — used to show the chosen supplier on the node card.
+export function manufacturerPhoto(id?: string | null): string | undefined {
+  if (!id) return undefined;
+  return MANUFACTURERS.find((m) => m.id === id)?.photos?.[0];
+}
 
 export type GarmentBrief = {
   name?: string;
@@ -112,8 +110,11 @@ export function recommendFor(brief: GarmentBrief): Quote[] {
     const specs = m.specialties.map((s) => s.toLowerCase());
     const fit = [...needs].filter((n) => specs.some((s) => s.includes(n) || n.includes(s)));
     const matchScore = fit.length * 3 + m.rating;
-    const sampleCost = Math.round((m.sampleBase * c) / 5) * 5;
-    const unitCost = Math.round(m.unitBase * c * 2) / 2; // nearest $0.50
+    // sampleBase / unitBase are the ESTIMATED FACTORY cost; the customer price is
+    // that run through the loss-proof cost-plus model (buffer + shipping + margin
+    // + Stripe gross-up + floor). See lib/pricing.ts.
+    const sampleCost = samplePrice(m.sampleBase * c);
+    const unitCost = bulkUnitPrice(m.unitBase * c);
     return {
       ...m, fit,
       matchScore,

@@ -30,6 +30,7 @@ export type Sample = {
   sampleCost?: number;
   leadDays?: number;
   qty: number;
+  qtys?: Record<string, number>; // per-connected-product quantity (checkout-style)
   address: Address;
   status: SampleStatus;
 };

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { editImage } from '@/lib/imagegen';
 import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
+import { usesProModel } from '@/lib/entitlements';
 
 // Image generation can take a while (~30–90s).
 export const maxDuration = 300;
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
     const refs = ordered ? inputs.slice(1) : [];
     const prompt = orderedPrompt(primary.kind, refs.length);
     const imgs = [base, primary.url, ...refs.map((r) => r.url)];
-    const image = await editImage(prompt, imgs);
+    const image = await editImage(prompt, imgs, usesProModel(gate.tier));
     return NextResponse.json({ image });
   } catch (e) {
     console.error('[visualise] failed:', (e as Error).message);

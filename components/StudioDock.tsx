@@ -9,18 +9,21 @@ const ICONS: Record<StageKey, ReactNode> = {
   sketch: <path d="M4 20l3.6-.9L18.1 8.6a1.8 1.8 0 0 0 0-2.6l-1.1-1.1a1.8 1.8 0 0 0-2.6 0L3.9 15.4 3 19z" />, // pencil
   visualise: (
     <>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9" r="1.6" />
-      <path d="M3 16.5l5-4.5 4 3.5 3-2.5 6 5" />
+      <circle cx="12" cy="4" r="2.6" />
+      <rect x="9.4" y="7.2" width="5.2" height="8" rx="2.6" />
+      <rect x="6.9" y="8.2" width="1.6" height="5.6" rx="0.8" />
+      <rect x="15.5" y="8.2" width="1.6" height="5.6" rx="0.8" />
+      <rect x="9.8" y="14.6" width="1.9" height="6.4" rx="0.95" />
+      <rect x="12.3" y="14.6" width="1.9" height="6.4" rx="0.95" />
     </>
-  ), // image / visualise
+  ), // model / full-body silhouette (filled)
   studio: (
     <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18" />
-      <ellipse cx="12" cy="12" rx="4" ry="9" />
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.6" />
+      <path d="M21 15l-5-5L5 21" />
     </>
-  ), // world / globe
+  ), // image / picture
   extract: <path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14" />, // crop
   pattern: (
     <>
@@ -68,6 +71,9 @@ const ICONS: Record<StageKey, ReactNode> = {
 // A blank/source glyph for stages that start from scratch.
 const BLANK = <rect x="4" y="4" width="16" height="16" rx="3" strokeDasharray="3 3" />;
 
+// Icons that are filled silhouettes rather than line art (rendered solid).
+const SOLID_ICONS = new Set<string>(['visualise']);
+
 // The logical input each stage transforms — drives the hover "reenactment"
 // (input → output). Stages with no entry start from BLANK.
 const BEFORE: Partial<Record<StageKey, StageKey>> = {
@@ -103,7 +109,7 @@ export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile
         aria-label={soon ? `${s.label} (coming soon)` : locked ? `${s.label} (upgrade to unlock)` : s.label}
         title={soon ? `${s.label} — coming soon` : locked ? `${s.label} — upgrade to unlock` : `${s.hint}${HOTKEY_FOR[s.key] ? `  ·  ${HOTKEY_FOR[s.key]!.toUpperCase()}` : ''}`}
       >
-        <svg className="dock-ic" viewBox="0 0 24 24" aria-hidden="true">{ICONS[s.key]}</svg>
+        <svg className={`dock-ic${SOLID_ICONS.has(s.key) ? ' dock-ic-solid' : ''}`} viewBox="0 0 24 24" aria-hidden="true">{ICONS[s.key]}</svg>
         <span className="dock-label">{s.label}{!soon && HOTKEY_FOR[s.key] && <kbd className="dock-key">{HOTKEY_FOR[s.key]!.toUpperCase()}</kbd>}{soon && <span className="dock-soon-label">Coming soon</span>}</span>
         {soon ? (
           <span className="dock-soon" aria-hidden="true">Soon</span>
@@ -116,9 +122,9 @@ export default function StudioDock({ stages, onAdd, onNote, onLibrary, onProfile
         {/* hover reenactment: input → output */}
         <div className="dock-preview" aria-hidden="true">
           <div className="np-scene">
-            <svg className="np-ic np-before" viewBox="0 0 24 24">{BEFORE[s.key] ? ICONS[BEFORE[s.key]!] : BLANK}</svg>
+            <svg className={`np-ic np-before${BEFORE[s.key] && SOLID_ICONS.has(BEFORE[s.key]!) ? ' dock-ic-solid' : ''}`} viewBox="0 0 24 24">{BEFORE[s.key] ? ICONS[BEFORE[s.key]!] : BLANK}</svg>
             <svg className="np-ic np-arrow" viewBox="0 0 24 24"><path d="M4 12h13" /><path d="M13 7l5 5-5 5" /></svg>
-            <svg className="np-ic np-after" viewBox="0 0 24 24">{ICONS[s.key]}</svg>
+            <svg className={`np-ic np-after${SOLID_ICONS.has(s.key) ? ' dock-ic-solid' : ''}`} viewBox="0 0 24 24">{ICONS[s.key]}</svg>
           </div>
           <div className="np-cap">{CARD_TEXT[s.key] ?? s.hint}</div>
         </div>

@@ -53,14 +53,14 @@ export default function StudioNode({ id, data, selected }: NodeProps) {
           <>
             <NodeArt seed={seedFrom(id)} />
             <div className="fb-blank">
-              <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><ellipse cx="12" cy="12" rx="4" ry="9" /></svg>
-              <span className="fb-hint">{d.note ?? 'connect a render or upload an image, then prompt a scene'}</span>
+              <svg className="fb-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.6" /><path d="M21 15l-5-5L5 21" /></svg>
+              {d.note ? <span className="fb-hint">{d.note}</span> : <strong className="node-empty-title">Connect anything and render it.</strong>}
             </div>
           </>
         )}
       </div>
 
-      <span className="fb-tag">Worldbuild</span>
+      <span className="fb-tag">Image</span>
 
       <div className="fb-tools">
         <button className="fb-tool nodrag" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }} title={d.image ? 'Replace image' : 'Upload an image'} aria-label="Upload an image"><UploadIcon /></button>

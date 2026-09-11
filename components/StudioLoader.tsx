@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 // toward whatever fraction of the load has actually completed, and only hands
 // off once that reaches 100%.
 const TIPS = [
+  'Your work saves automatically — nothing is ever lost.',
   'Double-click any node to open its studio.',
   'Drag from a node handle to branch the next stage.',
   'The canvas saves itself — there is no save button.',

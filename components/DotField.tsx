@@ -6,7 +6,7 @@ type Viewport = { x: number; y: number; zoom: number };
 
 // The canvas dot grid itself — each dot brightens by its distance to the cursor,
 // so a circle of dots lights up and follows the mouse. Pans/zooms with the flow.
-export default function DotField({ viewportRef }: { viewportRef: MutableRefObject<Viewport> }) {
+export default function DotField({ viewportRef, light = false }: { viewportRef: MutableRefObject<Viewport>; light?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -66,7 +66,8 @@ export default function DotField({ viewportRef }: { viewportRef: MutableRefObjec
             const a = 0.3 + e * 0.45;
             const r = (0.95 + e * 0.5) * dpr * Math.min(1.4, Math.max(0.4, zoom));
             ctx.beginPath();
-            ctx.fillStyle = `rgba(196,245,220,${a.toFixed(3)})`;
+            // dark dots on the light canvas, light mint dots on the dark canvas
+            ctx.fillStyle = light ? `rgba(60,60,67,${(a * 0.5).toFixed(3)})` : `rgba(196,245,220,${a.toFixed(3)})`;
             ctx.arc(px, py, r, 0, 6.2832);
             ctx.fill();
           }
@@ -91,7 +92,7 @@ export default function DotField({ viewportRef }: { viewportRef: MutableRefObjec
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('resize', resize);
     };
-  }, [viewportRef]);
+  }, [viewportRef, light]);
 
   return <canvas ref={ref} className="dot-field" aria-hidden />;
 }

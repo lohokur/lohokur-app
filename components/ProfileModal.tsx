@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMe, openPortal } from '@/lib/use-billing';
-import { priceFor } from '@/lib/entitlements';
+import { priceFor, CURRENCY } from '@/lib/entitlements';
 import { supabaseBrowser } from '@/lib/supabase/client';
+import { announcePopout, onPopout } from '@/lib/popout';
 
 // Full settings modal (Flora-style): left nav + rich panels. Opened via
 // openProfile() from the credits meter or the dock. Backdrop / Esc closes it and
@@ -22,10 +23,13 @@ export default function ProfileModal() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    const show = () => { setErr(null); setBusy(false); setSection('profile'); setOpen(true); };
+    const show = () => { setErr(null); setBusy(false); setSection('profile'); setOpen(true); announcePopout('profile'); };
     window.addEventListener('lk-profile', show);
     return () => window.removeEventListener('lk-profile', show);
   }, []);
+
+  // close if another popout opens (one at a time)
+  useEffect(() => onPopout('profile', () => setOpen(false)), []);
 
   useEffect(() => {
     if (!open) return;
@@ -109,7 +113,7 @@ export default function ProfileModal() {
                   <div>
                     <div className="set-k">Current plan</div>
                     <div className="set-plan-name">{ent?.label ?? '—'}</div>
-                    <div className="set-plan-price">{price == null ? 'Free' : `£${price} / month`}</div>
+                    <div className="set-plan-price">{price == null ? 'Free' : `${CURRENCY}${price} / month`}</div>
                     {me?.subscriptionStatus && me.subscriptionStatus !== 'active' && <div className="set-plan-status">status: {me.subscriptionStatus}</div>}
                     {periodEnd && <div className="set-plan-status">{me?.subscriptionStatus === 'canceled' ? 'ends' : 'renews'} {periodEnd}</div>}
                   </div>

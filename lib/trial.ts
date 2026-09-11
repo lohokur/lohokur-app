@@ -21,9 +21,9 @@ export function readTrial(meta: Record<string, unknown> | null | undefined, now 
   return { onTrial, trialEndsAt, trialUsed, daysLeft };
 }
 
-// During an active trial a free user is treated as Studio for entitlements/caps.
-// Paid users are already above the trial, so it never downgrades them.
-export function effectiveTier(baseTier: string | null | undefined, onTrial: boolean): string {
-  const t = baseTier ?? 'free';
-  return t === 'free' && onTrial ? 'studio' : t;
+// Pay-first: there is no free trial. A user's effective tier is simply their real
+// tier — free never gets a temporary upgrade. (`onTrial` is retained in the type for
+// back-compat but no longer grants anything.)
+export function effectiveTier(baseTier: string | null | undefined, _onTrial?: boolean): string {
+  return baseTier ?? 'free';
 }

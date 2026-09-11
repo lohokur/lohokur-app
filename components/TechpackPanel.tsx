@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   type Techpack, type Pom, type Material, type BomRow, type TrimRow, type Colorway,
   defaultTechpack, normalizeTechpack, rowId, techpackHtml,
 } from '@/lib/techpack';
+import { useStudio } from '@/lib/studio-context';
+import LockedView from '@/components/LockedView';
 
 const readFile = (f: File | null | undefined, cb: (url: string) => void) => {
   if (!f || !/^image\//.test(f.type)) return;
@@ -14,23 +16,57 @@ const readFile = (f: File | null | undefined, cb: (url: string) => void) => {
 };
 
 export default function TechpackPanel({
-  open, nodeId, value, image, onChange, onClose,
+  open, nodeId, value, image, generating, loading, onChange, onClose,
 }: {
   open: boolean;
   nodeId: string | null;
   value?: Techpack;
   image?: string;
+  generating?: boolean; // an AI draft is being generated from the plugged-in design
+  loading?: { flats: string[]; materials: number }; // pieces still generating (for per-element spinners)
   onChange: (tp: Techpack) => void;
   onClose: () => void;
 }) {
+  const { sideLocked } = useStudio();
   const [tp, setTp] = useState<Techpack>(() => normalizeTechpack(value ?? defaultTechpack()));
+  const [regenning, setRegenning] = useState<string | null>(null);
 
   useEffect(() => {
     const init = normalizeTechpack(value ?? defaultTechpack());
     setTp(init);
-    if (!value && nodeId) onChange(init);
+    // don't seed a blank pack while the AI is drafting one — its result will land shortly
+    if (!value && nodeId && !generating) onChange(init);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeId]);
+
+  // when the AI draft finishes, load it into the editor
+  const prevGen = useRef(false);
+  useEffect(() => {
+    if (prevGen.current && !generating) setTp(normalizeTechpack(value ?? defaultTechpack()));
+    prevGen.current = !!generating;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generating]);
+
+  // WHILE drafting, mirror each incremental result (flats, swatches, fields) as it
+  // lands in node data — so the pack fills in live and you can read it immediately
+  // instead of waiting for everything. (After generation, local edits take over.)
+  useEffect(() => {
+    if (generating && value) setTp(normalizeTechpack(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, generating]);
+
+  // same cadence as the sketch pad: a pointer-down anywhere outside the card
+  // (i.e. on the canvas) retracts it. Edits persist live, so nothing is lost.
+  // Skip while the AI is drafting so a stray click doesn't drop it mid-generation.
+  const panelRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!open || generating) return;
+    const onDown = (e: PointerEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, [open, generating, onClose]);
 
   const set = (next: Techpack) => { setTp(next); onChange(next); };
   const f = <K extends keyof Techpack>(k: K, v: Techpack[K]) => set({ ...tp, [k]: v });
@@ -86,10 +122,43 @@ export default function TechpackPanel({
     URL.revokeObjectURL(url);
   };
 
-  const flatSlot = (k: 'front' | 'side' | 'back') => (
+  // regenerate a technical flat from its live mockup if the vector isn't right
+  const regenFlat = async (k: 'front' | 'side' | 'back') => {
+    const mock = tp.mockups?.[k];
+    if (!mock || regenning) return;
+    setRegenning(k);
+    try {
+      const r = await fetch('/api/techpack/assets', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ image: mock, kind: 'vector' }) });
+      const j = await r.json();
+      if (j.image) setFlat(k, j.image);
+    } catch { /* leave the current flat */ }
+    setRegenning(null);
+  };
+
+  const flatSlot = (k: 'front' | 'side' | 'back') => {
+    // Free plan: side/back flats are paid → show a blurred paywall (front flat reused)
+    if (k !== 'front' && sideLocked && !tp.flats[k]) {
+      return (
+        <div className="tp-slot" key={k}>
+          <div className="tp-slot-img"><LockedView src={tp.flats.front ?? tp.mockups?.front} label={`${k} flat`} /></div>
+        </div>
+      );
+    }
+    const pending = !tp.flats[k] && (loading ? loading.flats.includes(k) : !!generating);
+    return (
     <div className="tp-slot">
       <div className="tp-slot-img">
-        {tp.flats[k] ? <img src={tp.flats[k]} alt={k} /> : <span>{k}</span>}
+        {tp.flats[k] ? <img src={tp.flats[k]} alt={k} /> : pending ? <span className="tp-slot-spin" /> : <span>{k}</span>}
+        {tp.flats[k] && (
+          <button className="tp-slot-x" onClick={() => setFlat(k, undefined)} title="Remove this flat" aria-label="Remove flat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        )}
+        {tp.mockups?.[k] && (
+          <button className="tp-slot-regen" onClick={() => regenFlat(k)} disabled={regenning === k} title="Regenerate this flat from the mockup" aria-label="Regenerate flat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={regenning === k ? 'spin' : ''}><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v5h-5" /></svg>
+          </button>
+        )}
       </div>
       <div className="tp-slot-btns">
         {image && <button onClick={() => setFlat(k, image)}>use upstream</button>}
@@ -98,14 +167,23 @@ export default function TechpackPanel({
         {tp.flats[k] && <button onClick={() => setFlat(k, undefined)}>clear</button>}
       </div>
     </div>
-  );
+    );
+  };
 
   return (
-    <aside className={`techpanel${open ? ' open' : ''}`} aria-hidden={!open}>
+    <aside ref={panelRef} className={`techpanel${open ? ' open' : ''}`} aria-hidden={!open}>
       <div className="tp-head">
         <span>Tech pack</span>
         <button className="sp-x" onClick={onClose} aria-label="Close">×</button>
       </div>
+
+      {generating && (
+        <div className="tp-generating" role="status">
+          <span className="tp-gen-spin" />
+          <span className="tp-gen-label">Reading your design &amp; drafting the tech pack…</span>
+          <span className="tp-gen-sub">measurements · materials · construction · colourways</span>
+        </div>
+      )}
 
       <div className="tp-body">
         {/* meta */}
@@ -120,7 +198,27 @@ export default function TechpackPanel({
           <label>Size range<input className="tp-in" value={tp.sizeRange} placeholder="XS – XXL" onChange={(e) => f('sizeRange', e.target.value)} /></label>
         </div>
 
-        {/* flats */}
+        {/* live mockups — the front/side/back renders */}
+        {(tp.mockups?.front || tp.mockups?.side || tp.mockups?.back) && (
+          <section className="tp-sec">
+            <div className="tp-sec-h">Live mockups</div>
+            <div className="tp-slots">
+              {(['front', 'side', 'back'] as const).map((k) => (
+                <div className="tp-slot" key={k}>
+                  <div className="tp-slot-img">
+                    {tp.mockups?.[k]
+                      ? <img src={tp.mockups[k]} alt={k} />
+                      : (k !== 'front' && sideLocked && tp.mockups?.front)
+                        ? <LockedView src={tp.mockups.front} label={`${k} view`} />
+                        : <span>{k}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* technical flats (vectors of the mockups) */}
         <section className="tp-sec">
           <div className="tp-sec-h">Technical flats</div>
           <div className="tp-slots">{flatSlot('front')}{flatSlot('side')}{flatSlot('back')}</div>
@@ -172,6 +270,13 @@ export default function TechpackPanel({
                 <input className="tp-cell" value={m.placement} placeholder="Placement" onChange={(e) => setMat(m.id, { placement: e.target.value })} />
                 <input className="tp-cell" value={m.desc} placeholder="Description" onChange={(e) => setMat(m.id, { desc: e.target.value })} />
               </div>
+            </div>
+          ))}
+          {/* swatches still generating — spin in place so you don't wait for them */}
+          {loading && loading.materials > 0 && Array.from({ length: loading.materials }).map((_, i) => (
+            <div className="tp-mcard tp-mcard-loading" key={`ld-${i}`}>
+              <span className="tp-mimg"><span className="tp-slot-spin" /></span>
+              <div className="tp-mfields"><span className="tp-loading-txt">generating…</span></div>
             </div>
           ))}
           <button className="tp-add" onClick={addMat}>+ add material</button>
@@ -245,7 +350,6 @@ export default function TechpackPanel({
 
       <div className="tp-foot tp-foot-row">
         <button className="tp-export" onClick={exportPack}>Export pack ↗</button>
-        <button className="sp-done" onClick={onClose}>Done</button>
       </div>
     </aside>
   );

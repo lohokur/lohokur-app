@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { editImage } from '@/lib/imagegen';
+import { usesProModel } from '@/lib/entitlements';
 import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 
 // Editing can take a while (~30–90s).
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     );
   }
   try {
-    const out = await editImage(PROMPT, [image]);
+    const out = await editImage(PROMPT, [image], usesProModel(gate.tier));
     return NextResponse.json({ image: out });
   } catch (e) {
     console.error('[annotate] failed:', (e as Error).message);

@@ -19,7 +19,7 @@ export type VisResult = { id: string; image: string; inputs: string[] };
 export const STAGES: Stage[] = [
   { key: 'sketch', label: 'Sketch', hint: 'Draw, prompt or drop an idea' },
   { key: 'visualise', label: 'Model', hint: 'Place the garment on a model' },
-  { key: 'studio', label: 'Worldbuild', hint: 'Plug in a visual · prompt it anywhere' },
+  { key: 'studio', label: 'Image', hint: 'Connect anything · render it' },
   { key: 'pattern', label: 'Pattern maker', hint: 'Extract a piece · trace the pattern' },
   { key: 'techpack', label: 'Techpack', hint: 'Spec · grading · BOM' },
   { key: 'sample', label: 'Produce', hint: 'One sample or a bulk run' },
@@ -31,7 +31,7 @@ export const STAGES: Stage[] = [
 export const CARD_TEXT: Partial<Record<StageKey, string>> = {
   sketch: 'draw · upload · or prompt',
   visualise: 'plug in a sketch → place it on a model',
-  studio: 'connect a render, then prompt a scene',
+  studio: 'connect anything and render it',
   pattern: 'create a pattern of this product',
   techpack: 'create a techpack of this product',
   sample: 'create a physical sample of this product',
@@ -72,7 +72,7 @@ export type View = (typeof VIEWS)[number];
 // both paths converge on Ship. A sample can also feed manufacture: approve the
 // one-off, then order bulk from the factory.
 export const NEXT: Partial<Record<StageKey, StageKey[]>> = {
-  sketch: ['visualise', 'studio', 'pattern'],
+  sketch: ['visualise', 'studio', 'pattern', 'techpack'],
   visualise: ['pattern', 'studio'],
   studio: ['studio', 'pattern'],
   extract: ['pattern', 'studio'], // vaulted node; kept so old canvases still route

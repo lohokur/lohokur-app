@@ -18,6 +18,17 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const BUCKET = process.env.RENDER_BUCKET || 'renders';
 
+// Never let a slow Storage upload (or a slow fetch of the provider's result URL)
+// hang the request to the serverless limit — bound both and fall back to an inline
+// data-URL, so a render is quick and never lost even when Storage is degraded.
+const FETCH_TIMEOUT_MS = Number(process.env.STORAGE_FETCH_TIMEOUT_MS || 30000);
+const UPLOAD_TIMEOUT_MS = Number(process.env.STORAGE_UPLOAD_TIMEOUT_MS || 30000);
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  let t: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, rej) => { t = setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms); });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(t)) as Promise<T>;
+}
+
 const configured = () =>
   !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -65,7 +76,7 @@ export async function persistImage(src: string): Promise<string> {
     contentType = m[1];
     buf = Buffer.from(m[2], 'base64');
   } else {
-    const r = await fetch(src);
+    const r = await fetch(src, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!r.ok) throw new Error(`failed to fetch generated image (${r.status})`);
     contentType = r.headers.get('content-type') || 'image/png';
     buf = Buffer.from(await r.arrayBuffer());
@@ -74,12 +85,14 @@ export async function persistImage(src: string): Promise<string> {
   const toDataUrl = () => `data:${contentType};base64,${buf.toString('base64')}`;
 
   try {
-    await ensureBucket();
+    await withTimeout(ensureBucket(), UPLOAD_TIMEOUT_MS, 'storage ensureBucket');
     const path = `${crypto.randomUUID()}.${extFor(contentType)}`;
     const admin = supabaseAdmin();
-    const { error } = await admin.storage
-      .from(BUCKET)
-      .upload(path, buf, { contentType, upsert: false });
+    const { error } = await withTimeout(
+      admin.storage.from(BUCKET).upload(path, buf, { contentType, upsert: false }),
+      UPLOAD_TIMEOUT_MS,
+      'storage upload',
+    );
     if (error) throw error;
     const { data } = admin.storage.from(BUCKET).getPublicUrl(path);
     return data.publicUrl || toDataUrl();
@@ -88,4 +101,37 @@ export async function persistImage(src: string): Promise<string> {
     console.error('[storage] upload failed, keeping inline:', (e as Error).message);
     return m ? src : toDataUrl();
   }
+}
+
+// ---- shared tech pack HTML -------------------------------------------------
+// A dedicated public bucket that serves rendered tech packs as standalone HTML,
+// so a manufacturer can open the link with no account. Keyed by a stable share
+// id so re-sharing updates the same URL.
+const HTML_BUCKET = process.env.TECHPACK_BUCKET || 'techpacks';
+let htmlBucketReady: Promise<void> | null = null;
+function ensureHtmlBucket() {
+  if (!htmlBucketReady) {
+    htmlBucketReady = (async () => {
+      const admin = supabaseAdmin();
+      const { data } = await admin.storage.getBucket(HTML_BUCKET);
+      if (data) return;
+      // no allowedMimeTypes restriction — Supabase rejects "text/html; charset=…"
+      // against a strict ['text/html'] list, which was silently failing the upload
+      const { error } = await admin.storage.createBucket(HTML_BUCKET, { public: true, fileSizeLimit: '10MB' });
+      if (error && !/exists/i.test(error.message)) throw error;
+    })().catch((e) => { htmlBucketReady = null; throw e; });
+  }
+  return htmlBucketReady;
+}
+
+export async function persistHtml(id: string, html: string): Promise<string | null> {
+  if (!configured()) return null;
+  await ensureHtmlBucket();
+  const admin = supabaseAdmin();
+  const path = `${id}.html`;
+  const { error } = await admin.storage
+    .from(HTML_BUCKET)
+    .upload(path, Buffer.from(html, 'utf8'), { contentType: 'text/html', upsert: true });
+  if (error) throw error;
+  return admin.storage.from(HTML_BUCKET).getPublicUrl(path).data.publicUrl || null;
 }

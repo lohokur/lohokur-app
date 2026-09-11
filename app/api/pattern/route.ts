@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { editImage } from '@/lib/imagegen';
+import { usesProModel } from '@/lib/entitlements';
 import { consumeGeneration, refundGeneration } from '@/lib/billing-server';
 
 export const maxDuration = 300;
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const out = await editImage(prompt, inputs);
+    const out = await editImage(prompt, inputs, usesProModel(gate.tier));
     return NextResponse.json({ image: out });
   } catch (e) {
     await refundGeneration(2);

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent as RPE } from 'react';
 import { VIEWS, type View } from '@/lib/nodeTypes';
 import ColorWheel from '@/components/ColorWheel';
 import FaceIdDissolve from '@/components/FaceIdDissolve';
+import type { Label } from '@/lib/techpack';
 
 const W = 1000, H = 1250; // 4:5 portrait — matches the node cards
 // the minimal side-pad shows only these tools; the rest live in the full workspace
@@ -43,7 +44,7 @@ function makeCanvas(fill?: string): HTMLCanvasElement {
 }
 
 export default function SketchStudio({
-  open, nodeId, views, onView, onClose, initialView = 'front', onViewChange, onApplyEdits, applying,
+  open, nodeId, views, onView, onClose, initialView = 'front', onViewChange, onApplyEdits, applying, onBringToLife, label, onLabel,
 }: {
   open: boolean;
   nodeId: string | null;
@@ -54,18 +55,23 @@ export default function SketchStudio({
   onViewChange?: (view: View) => void; // reflect the pad's F/S/B on the node card
   onApplyEdits?: (view: View, dataUrl: string) => void; // re-render this view with the drawn annotations
   applying?: boolean; // parent is running the annotate edit
+  onBringToLife?: (view: View, dataUrl: string) => void; // render this sketch through the AI visualiser
+  label?: Label; // the designed brand/care label carried down the pipeline
+  onLabel?: (l: Label) => void;
 }) {
-  const docs = useRef<Partial<Record<View, Doc>>>({});
-  const undoStack = useRef<Partial<Record<View, Snap[]>>>({});
-  const redoStack = useRef<Partial<Record<View, Snap[]>>>({});
-  const loadedSrc = useRef<Partial<Record<View, string>>>({}); // which image is painted into each view's background
+  // keyed by view — plus a 'label' surface (the label is drawn on the same canvas)
+  const docs = useRef<Record<string, Doc>>({});
+  const undoStack = useRef<Record<string, Snap[]>>({});
+  const redoStack = useRef<Record<string, Snap[]>>({});
+  const loadedSrc = useRef<Record<string, string>>({}); // which image is painted into each surface's background
   const dispRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const minShellRef = useRef<HTMLDivElement>(null); // minimal-pad card — click outside it (the canvas) retracts
   const bufRef = useRef<HTMLCanvasElement | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
-  const [view, setView] = useState<View>('front');
+  const [view, setView] = useState<View | 'label'>('front'); // 'label' = the label design surface
   // Simple pad slides in from the side by default; the expand button reveals the
   // full Photoshop-grade workspace (all tools, layers, blend modes).
   const [full, setFull] = useState(false);
@@ -91,6 +97,13 @@ export default function SketchStudio({
   const [textVal, setTextVal] = useState('');
   const [dissolve, setDissolve] = useState(false); // Face-ID dissolve overlay while applying edits
   const [dissolveSrc, setDissolveSrc] = useState('');
+  const [lifeMode, setLifeMode] = useState(false); // dissolve label: bring-to-life vs apply-edits
+  // in-pad label mode: the sketch minimises to a thumbnail and the pad becomes a
+  // label designer; click the thumbnail to return to sketching.
+  const [labelMode, setLabelMode] = useState(false);
+  const [labelRendering, setLabelRendering] = useState(false);
+  const [prevView, setPrevView] = useState<View>('front');
+  const [sketchThumb, setSketchThumb] = useState('');
   // minimal-pad canvas zoom + pan (pinch to zoom, two-finger to pan; drawing still maps correctly)
   const [mz, setMz] = useState(1);
   const [mpan, setMpan] = useState({ x: 0, y: 0 });
@@ -148,7 +161,8 @@ export default function SketchStudio({
     try {
       const url = flat().toDataURL('image/png');
       loadedSrc.current[view] = url; // we just wrote this; don't let the load effect reload/clobber the strokes
-      onView(view, url);
+      if (view === 'label') onLabel?.({ brand: label?.brand ?? '', care: label?.care ?? '', image: label?.image, draft: url });
+      else onView(view, url);
     } catch { /* cross-origin base image can't be exported this frame — leave the saved view as-is */ }
   };
 
@@ -194,7 +208,7 @@ export default function SketchStudio({
   // it loaded so a doc created before `views` was ready still gets its image.
   useEffect(() => {
     if (!open) return;
-    const src = views[view];
+    const src = view === 'label' ? (label?.image ?? label?.draft) : views[view];
     const d = doc();
     if (src && loadedSrc.current[view] !== src) {
       loadedSrc.current[view] = src;
@@ -216,7 +230,7 @@ export default function SketchStudio({
       composite();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, nodeId, view, views, reloadKey]);
+  }, [open, nodeId, view, views, label, reloadKey]);
 
   const fit = () => {
     const st = stageRef.current; if (!st) return;
@@ -250,6 +264,19 @@ export default function SketchStudio({
     const id = requestAnimationFrame(() => textInputRef.current?.focus());
     return () => cancelAnimationFrame(id);
   }, [textEntry]);
+  // minimal pad: a pointer-down anywhere outside the card (i.e. on the canvas)
+  // retracts it — there's no Done button in the minimal pad. Not in full mode,
+  // where the whole screen is the editor. Skip while a render is applying so a
+  // stray click doesn't drop the pad mid-generation.
+  useEffect(() => {
+    if (!open || full || applying || labelMode) return; // don't retract while the label modal is open
+    const onDown = (e: PointerEvent) => {
+      const shell = minShellRef.current;
+      if (shell && !shell.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, [open, full, applying, labelMode, onClose]);
   // keep the Face-ID dissolve on screen briefly after applying ends, to play the "gather"
   useEffect(() => {
     if (applying) { setDissolve(true); return; }
@@ -469,7 +496,7 @@ export default function SketchStudio({
       }
       // Delete only removes a transform-selected element — never a node, never a whole drawing layer by surprise
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); if (xf.current) deleteActiveElement(); return; }
-      if (e.key === 'Escape') { e.preventDefault(); if (wheelOpen || sizeOpen || layersOpen) { setWheelOpen(false); setSizeOpen(false); setLayersOpen(false); } else if (xf.current) { xf.current = null; composite(); } else onClose(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); if (labelMode) { setLabelMode(false); } else if (wheelOpen || sizeOpen || layersOpen) { setWheelOpen(false); setSizeOpen(false); setLayersOpen(false); } else if (xf.current) { xf.current = null; composite(); } else onClose(); return; }
       if (e.key === '[') { e.preventDefault(); setSize((s) => Math.max(1, s - 2)); return; }
       if (e.key === ']') { e.preventDefault(); setSize((s) => Math.min(120, s + 2)); return; }
       const map: Record<string, Tool> = { b: 'brush', n: 'pencil', e: 'eraser', v: 'transform', l: 'liquify', g: 'fill', i: 'eyedropper' };
@@ -479,7 +506,7 @@ export default function SketchStudio({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, wheelOpen, sizeOpen, layersOpen]);
+  }, [open, wheelOpen, sizeOpen, layersOpen, labelMode]);
 
   // Click anywhere outside an open popover (incl. the canvas) dismisses it, so you
   // can pop the colour/size/layers panel and go straight back to drawing.
@@ -588,7 +615,33 @@ export default function SketchStudio({
     setTextEntry(null); setTextVal('');
   }
   // Send the current view (render + hand-drawn panels + labels) to be re-rendered with the edits applied.
-  const applyEdits = () => { if (!onApplyEdits || applying) return; try { const url = flat().toDataURL('image/png'); setDissolveSrc(url); onApplyEdits(view, url); } catch { /* cross-origin base can't be exported */ } };
+  const applyEdits = () => { if (!onApplyEdits || applying || view === 'label') return; try { const url = flat().toDataURL('image/png'); setLifeMode(false); setDissolveSrc(url); onApplyEdits(view, url); } catch { /* cross-origin base can't be exported */ } };
+  // render the current flattened view into a photorealistic product shot, in place.
+  // snapshot the sketch first so Undo removes the generation and brings it back.
+  const runBringToLife = () => { if (!onBringToLife || applying || view === 'label') return; try { snapshot(); const url = flat().toDataURL('image/png'); setLifeMode(true); setDissolveSrc(url); onBringToLife(view, url); } catch { /* cross-origin base can't be exported */ } };
+
+  // ── label mode: the sketch minimises to a thumbnail and the pad becomes a
+  // full drawing canvas for the label. "Render label" turns the drawing into a
+  // real fabric label, which then carries down the pipeline. ─────────────────
+  const enterLabelMode = () => {
+    try { setSketchThumb(flat().toDataURL('image/png')); } catch { /* cross-origin base */ }
+    setPrevView(view === 'label' ? 'front' : view);
+    setLabelMode(true);
+    setView('label');
+  };
+  const exitLabelMode = () => { setLabelMode(false); setView(prevView); };
+  const renderLabel = async () => {
+    if (labelRendering) return;
+    let draft: string;
+    try { snapshot(); draft = flat().toDataURL('image/png'); } catch { return; }
+    setLabelRendering(true);
+    try {
+      const r = await fetch('/api/techpack/assets', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ image: draft, kind: 'label-render' }) });
+      const j = await r.json();
+      if (j.image) onLabel?.({ brand: label?.brand ?? '', care: label?.care ?? '', image: j.image, draft });
+    } catch { /* leave the drawing */ }
+    setLabelRendering(false);
+  };
 
   // Remove a plain background from the active (imported) layer: flood-fill from the
   // edges, clearing everything close to the corner colour. Reveals the white canvas.
@@ -645,12 +698,14 @@ export default function SketchStudio({
     const dotD = Math.max(5, Math.min(18, 5 + size / 8));
     return (
       <div className={`pe-min${open ? ' open' : ''}`} aria-hidden={!open}>
-        <div className="pe-min-shell nowheel nopan nodrag">
+        <div className="pe-min-shell nowheel nopan nodrag" ref={minShellRef}>
           <div className="pe-min-head">
             <div className="pe-min-views">
-              {VIEWS.map((v) => (
-                <button key={v} className={view === v ? 'on' : ''} onClick={() => { setView(v); onViewChange?.(v); }}>{v}</button>
-              ))}
+              {labelMode
+                ? <span className="pe-min-labeltag">Label</span>
+                : VIEWS.map((v) => (
+                    <button key={v} className={view === v ? 'on' : ''} onClick={() => { setView(v); onViewChange?.(v); }}>{v}</button>
+                  ))}
             </div>
             <div className="pe-min-meta">
               {onApplyEdits && (
@@ -666,7 +721,20 @@ export default function SketchStudio({
               <button className="pe-min-x" title="Full workspace" aria-label="Expand to full workspace" onClick={() => setFull(true)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" /></svg>
               </button>
-              <button className="pe-min-done" onClick={() => onClose()}>Done</button>
+              {onLabel && (
+                <button className={`pe-min-x${label?.image ? ' has' : ''}${labelMode ? ' on' : ''}`} title="Design your brand / care label" aria-label="Design label" onClick={() => (labelMode ? exitLabelMode() : enterLabelMode())}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V4a1 1 0 0 1 1-1h8a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6z" /><circle cx="7.5" cy="7.5" r="1.3" /></svg>
+                </button>
+              )}
+              {labelMode ? (
+                <button className="pe-min-life" title="Render this drawing into a real fabric label" onClick={renderLabel} disabled={labelRendering}>
+                  {labelRendering ? 'Rendering…' : 'Render label'}
+                </button>
+              ) : onBringToLife && (
+                <button className="pe-min-life" title="Render this sketch into a photorealistic product shot" onClick={runBringToLife}>
+                  Render sketch
+                </button>
+              )}
             </div>
           </div>
 
@@ -694,10 +762,19 @@ export default function SketchStudio({
             {dissolve && (
               <div className="pe-min-applying">
                 <FaceIdDissolve src={dissolveSrc} active={!!applying} />
-                <span className="pe-faceid-label">{applying ? 'applying edits…' : 'assembling…'}</span>
+                <span className="pe-faceid-label">{applying ? (lifeMode ? 'rendering…' : 'applying edits…') : 'assembling…'}</span>
               </div>
             )}
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { importImage(e.target.files?.[0]); e.currentTarget.value = ''; }} />
+
+            {labelMode && sketchThumb && (
+              <button className="pe-label-thumb nodrag" onPointerDown={(e) => e.stopPropagation()} onClick={exitLabelMode} title="Back to your sketch">
+                <img src={sketchThumb} alt="sketch" /><span>Sketch</span>
+              </button>
+            )}
+            {labelRendering && (
+              <div className="pe-min-applying"><span className="pe-min-spin" /><span className="pe-faceid-label">rendering label…</span></div>
+            )}
           </div>
 
           <div className="pe-min-bar">
@@ -791,6 +868,11 @@ export default function SketchStudio({
               ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3m13-5h-3a2 2 0 0 0-2 2v3" /></svg>
               : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" /></svg>}
           </button>
+          {onBringToLife && (
+            <button className="pe-life" title="Render this sketch into a photorealistic product shot" onClick={runBringToLife}>
+              Render sketch
+            </button>
+          )}
           <button className="pe-done" onClick={() => onClose()}>Done</button>
         </div>
       </div>
